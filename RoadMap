@@ -6,9 +6,37 @@
       - Storage media == drives
       - CPU for faster processing/decrypting
       - Modem/Broadband/T[0-9] for faster file transfers
-      - Firewall for delaying traces
+      - Packet Prioritization for deeper chains (otherwise the link stability gets so low it becomes unusable)
+       - Maybe say, you can build links safely up to four nodes, and unstable links up to six nodes where there's a chance you'll get disconnected.
+        + that's a good idea...I was just about suggest that any "unsafe" nodes will just affect the connection to the last node
+         - oh, so you don't get kicked off entirely?
+          - That's what I meant by keeping the focus clear. Only the last node can be on to you.
+           - How about, if the last node manages to trace you (up to your firewall), it notifies the other computers in your chain and they change their passwords?
+          + before you connect, the safety of the chain is determined by the other computers along the chain. the other computers in the chain will not kill your connection.
+           - That's already in ... the type of nodes you connect through in relation to the type of adversary you have determines how fast he can trace you. Liek, a back-water connection in
+            Nigeria or something will be slow as hell but really hard to trace. Similarly, a CIA node will be pretty hard to trace by a Russian adversary, and somewhat hard by an American adversary,
+            and almost trivial for another govt agency.
+            + Ah, ok excellent.
+           - Should the types of nodes you use provide a limit on transfer rate and/or max chain depth AKA QOS AKA quality?
+            - Through a satellite you lose more QOS than by using a closer computer.
+            - So you can still build 100-depth nodes if you really, really want but it will be kind of pointless.
+             - Actually, that's still bad. Let's make QOS reduction a factor of existing link depth.
+              + Definitely. There's probably no need to have a chain longer than 20 nodes
+               - Agreed. TOTAL max.
+                + Of course that can be adjusted with some multiplying and stuff.
+                 - fFreelinkConnDegredationExponent ^^
+      - Firewall for delaying traces once they reached your $home
      2) Software
       - Default Software (shell standards)
+       - ls or dir? both -omouse |okay -downs
+        - include directories? yes, but with max.depth for directories of 1 -omouse | 
+         - I was gonna say "no need" :p maybe some pre-made directories like "bin", for software, or "data" for ... data, with automatic file sorting
+         - Does the player need to be able to make directories? That leads to the question : what would the player need dirs for? The player doesn't need directories on their own computer perhaps...or when they download a file from a remote machine it could create a directory for that IP (that might be useful)?
+          - How about tagging files with their origin IP and including that in ls?
+          + that's a good idea...so no directories for players, but on remote computers? 
+           - agreed.
+       - telnet/connect
+       - chain/proxy/forward
       - Extensions
       - Upgrades
      3) Metaware (drives the game)
@@ -79,9 +107,19 @@
      - Example: A university network will have problems tracing your connection through a CIA node.
    
  - File
-  - Name
+  - Name (unique ID on that system .. could that cause problems when transferring it elsewhere? ... give data files GUIDs) (if there's a conflict with names from different computers, the computer name or ip could be prepended to the filename?) ( might cause problems if it's overseen ... GUID is easier. ... But also harder to type. Hm.) (manually re-naming + the hidden guid?) (... How about appended GUID and auto-completion via TAB?)
   - Encryption Level
-  - Runnable?
+  - Runnable? (runnable files must be unencrypted)
+   - Files either contain "gibberish", that is, tense data, or small blocks of text. Executable files fall under the first category.
+    - Include an internal scripting language?
+     + what do you mean by this? like actual .py/.lua/.whatever that can be executed in-game?
+      - kinda like shellscripts, being able to chain in-game commands together.
+       + that would be really neat
+        - but maybe of limited usability to most players, as it might be hard to grasp
+         + maybe not too hard to grasp? It would be worth grasping for players if they're going through a certain routine on connection...or that might make it too easy
+          because they might be able to automate a lot of the game away? [... true -downs]
+          - Let's leave it out but strive to reduce routine.
+
  
  - 1.0 Alpha
   - Last phase where radical new ideas can be introduced
