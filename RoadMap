@@ -1,16 +1,30 @@
  - First working release, 0.1
   - open world description format
    - Use XML, zip-compressed for better storage (Like ODF does) ^^
+    - We need a spec on the entities of the game.
+     1) Hardware
+      - Storage media == drives
+      - CPU for faster processing/decrypting
+      - Modem/Broadband/T[0-9] for faster file transfers
+      - Firewall for delaying traces
+     2) Software
+      - Default Software (shell standards)
+      - Extensions
+      - Upgrades
+     3) Metaware (drives the game)
+      - Tracing AI, ICE (see Wikipedia, http://en.wikipedia.org/wiki/Intrusion_Countermeasures_Electronics)
+      
    - UTF external string storage for easier translation?
-    - Exclusive usage of UTF internally? (that's a new one for me :( - downs)
+    - Exclusive usage of UTF internally? (that's a new one for me :( But I can learn. -downs)
+    - External is better methinks.
+     - okay. ...... In XML? :p
+     - we need to use something like gettext
   - basic world for testing
-  - timing mechanics (traces, bounces)
+  - timing mechanisms (traces, bounces)
   - basic RPG system (extensible computer; modem, etc)
+   - Experience allows access to better missions? Liek, "Fame"
   - randomly generated networks/computers/missions?
-  - 
- 
- - Computer
-  - CPU, RAM, Modem, Firewall?
+   - Random networks lead to exploitable graphs. Also hard to make work with a fixed story.
  - Networks
   - ability to purchase shell accounts? (omouse) THAT IS NEAT. (downs)
   - intranet hacking?
@@ -26,6 +40,8 @@
    + Naah. Let's not get _too_ realistic here. Also has nothing to do with the rest of the game. (downs)
    + True but you can kill time and still make some cash. (omouse)
    + If you need to kill time, we screwed up. (downs)
+  - Stock market
+   - You can manipulate shares with your hacks (obviously).
  
  - Programs
   - all will have GUI-counterparts? Or just some?
@@ -43,9 +59,29 @@
             - Some hosts might only be reachable from a subnet gateway.
             - Or you might want to check if a host is down from a (D)DOS attack.
              + Ah true. That's a much better idea. -omouse (Whee! -downs) 
-  - tracert/showroute
+  - tracert/showroute -- Let's move this up to entities.
    - Showing an image of how you're connected to a machine? like the connections listing
     - oh, you mean tracert without parameters ... showroute? |Exactly | .. it's not a trace. Traces are already in the game, this would give players the wrong idea. | Oops.
+ 
+ -- Starting points --
+ Let's split the entity data up into meta, hard and soft. Though I am not sure how much soft a non-player computer needs.
+
+  - Computers
+   - Configuration
+    - Storage Media (available space, available file nodes)
+     - Files (includes runnable, downloadable code and encrypted data)
+   - World Information
+    - Name
+    - Network IP
+    - Type
+   - Meta
+    - Generic trace algorithms; configurable modes of operation, different behavior depending on system will be slowed down more or less by some types of computers.
+     - Example: A university network will have problems tracing your connection through a CIA node.
+   
+ - File
+  - Name
+  - Encryption Level
+  - Runnable?
  
  - 1.0 Alpha
   - Last phase where radical new ideas can be introduced
@@ -56,3 +92,4 @@
   - GUI client
    - gui client on top of command-line or separate? I vote separate.
    - theming of the gui client (CSS style wouldn't be too bad)
+    - Agreed.
