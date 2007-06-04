@@ -1,4 +1,6 @@
 struct text {
+  char[] data;
+  invariant { validate(data); }
 }
 
 struct drive {
