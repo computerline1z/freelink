@@ -1,0 +1,19 @@
+defined later: computer, shell
+* A connection is a structure made from two computers.
+  * A connection can be asked for the relation between those two computers (link quality, trace speed)
+* A route is an ordered array of unique computers with a length of at least two.
+  * Each route has as a property, an array of connections (which can be dynamically generated)
+    with a length one smaller than the length of the route.
+  * Each computer in the route but the first one, must be reachable from its predecessor.
+  * The first computer in the route must always be the player's computer.
+* A session is a structure made from
+  * a route,
+  * a shell on the last computer in the route.
+* A trace is a structure made from
+  * a session,
+  * a number n in Int indicating an entry in the session's route's connection array.
+    * When n reaches zero, an Event:TraceCompleted is generated. After its completion, the trace is destroyed.
+  * a number p in Float indicating the progress in tracing the connection.
+    * p shall initially be one.
+    * p shall only ever become smaller.
+    * When p reaches zero, it shall be re-set to one while n is decreased.
