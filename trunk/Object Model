@@ -1,9 +1,15 @@
-defined later: computer, shell
+defined later: computer, shell, user
 * A connection is a structure made from two computers.
   * A connection can be asked for the relation between those two computers (link quality, trace speed)
+  * For a connection to be built, these things are required:
+    1) shell on the first computer,
+    2) the second computer must be reachable from the first computer,
+    3) the user must possess sufficient authentication data.
 * A route is an ordered array of unique computers with a length of at least two.
   * Each route has as a property, an array of connections (which can be dynamically generated)
     with a length one smaller than the length of the route.
+  * There shall be an algorithm used to aggregate the link quality values from the respective connections in the route into one value.
+    * This value must not exceed the maximum value for the user.
   * Each computer in the route but the first one, must be reachable from its predecessor.
   * The first computer in the route must always be the player's computer.
 * A session is a structure made from
