@@ -17,3 +17,25 @@ defined later: computer, shell
     * p shall initially be one.
     * p shall only ever become smaller.
     * When p reaches zero, it shall be re-set to one while n is decreased.
+    
+    class computer { }
+    class connection { computer start, end; qos getLinkQuality(); float getTraceProgress(); }
+    class route {
+      computer[] components;
+      class connectionArray { }
+      connectionArray connections;
+      invariant {
+        assert(components.length>2);
+        foreach (c; connections) assert(c.start.canReach(c.end));
+      }
+    }
+    class session {
+      route r;
+      shell sh;
+    }
+    class trace {
+      session sess;
+      int tracePosition; 
+      float connTracePos; 
+      invariant { assert(tracePosition!<0); assert(tracePosition<sess.components.length); assert((connTracePos!<0f)&&(connTracePos!>1f));}
+    }
