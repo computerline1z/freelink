@@ -32,6 +32,7 @@
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="base.d" />
+		<Unit filename="func.d" />
 		<Extensions>
 			<code_completion />
 		</Extensions>
