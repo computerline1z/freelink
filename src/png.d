@@ -25,7 +25,8 @@ void putpixel(SDL_Surface *surf, int x, int y, ubyte[] data) {
   (cast(ubyte*)surf.pixels + y*surf.pitch + x*4)[0..4]=[data[2], data[1], data[0], 0];
 }
 
-SDL_Surface *decode(ubyte[] data) {
+SDL_Surface *decode(void[] _data) {
+  ubyte[] data=cast(ubyte[])_data;
   writefln("PNG decoding ", data.length);
   assert(data[0..8]==[cast(ubyte)137, 80, 78, 71, 13, 10, 26, 10], "Not a PNG file!");
   data=data[8..$];
