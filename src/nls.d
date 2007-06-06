@@ -2,18 +2,26 @@ import std.utf, std.file, std.string, func, std.path: sep;
 
 static this() {
   char[][char[]] init;
+  char[] curlang="";
   nls[""]=init;
-  map(
-    map(
-      filter(
-        map(
-          split(cast(char[])read("nls"~sep~"default.txt"), "\n"),/// split into lines
-          (char[] c) { if (c.length&&(c[$-1]=='\r')) c=c[0..$-1]; return c; } /// remove trailing \r
-        ), (char[] line) { return line.find("=")!=-1; } /// remove lines without =
-      ), (char[] c) { auto s=c.split("="); return [s[0], s[1..$].join("=")].dup; } /// split at =
-    ), (char[][] pair) { nls[""][pair[0]]=pair[1]; assert(pair.length==2); } /// assign to AA
+  auto lines=map(
+    split(cast(char[])read("nls"~sep~"default.txt"), "\n"),/// split into lines
+    (char[] c) { if (c.length&&(c[$-1]=='\r')) c=c[0..$-1]; return c; } /// remove trailing \r
   );
+  foreach (line; lines) {
+    if (!line.length) continue;
+    if (line[0]=='[') {/// begin of a new language section
+      assert(line.find("]")!=-1);
+      curlang=line[1..$-1];
+      nls[curlang]=init;
+    } else if (line.find("=")!=-1) {
+      auto pair=line.split("=");
+      nls[curlang][pair[0]]=pair[1..$].join("=");
+    } else assert(false, "Invalid NLS data line: "~line);
+  }
 }
+
+void setLanguage(char[] l="") { assert(l in nls); lang=l; }
 
 char[][char[]][char[]] nls;
 char[] lang;

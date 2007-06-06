@@ -31,7 +31,14 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Linker>
+			<Add option="-static" />
+			<Add library="SDL" />
+			<Add library="winmm" />
+			<Add library="gdi32" />
+		</Linker>
 		<Unit filename="computer.d" />
+		<Unit filename="connection.d" />
 		<Unit filename="contrib\SDL.d" />
 		<Unit filename="contrib\libgd.d" />
 		<Unit filename="file.d" />
