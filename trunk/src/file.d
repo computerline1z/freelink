@@ -20,9 +20,10 @@ class File {
 class FileSystem {
   File[] files;
 
-  kquad used() {
-    if (!files.length) return 0;
-    return fold(map(files, &member!(File, "size")), &sum!(kquad));
+  kquad used () {
+    if (!files.length)
+      return 0;
+    return fold (map (files, &member!(File, "size")), &sum!(kquad));
   }
   File[] binary () {
     return filter!(File) (files, (File f) {
