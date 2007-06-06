@@ -12,7 +12,7 @@ static this() {
     if (!line.length) continue;
     if (line[0]=='[') {/// begin of a new language section
       assert(line.find("]")!=-1);
-      curlang=line[1..$-1];
+      curlang=line[1..line.find("]")];
       nls[curlang]=init;
     } else if (line.find("=")!=-1) {
       auto pair=line.split("=");
