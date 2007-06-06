@@ -1,4 +1,4 @@
-import computer, file, connection;
+import computer, file;
 import std.stdio;
 import SDL;
 
