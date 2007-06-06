@@ -33,11 +33,4 @@ class FileSystem {
     return filter!(File) (files, (File f) {
       return !f.runnable; });
   }
-
-  kquad used () {
-    kquad x;
-    foreach (f; files)
-      x += f.size;
-    return x;
-  }
 }
