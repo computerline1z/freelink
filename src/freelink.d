@@ -10,4 +10,5 @@ void main ()
   writefln (x.name);
   writefln (f.name);
   writefln ("Available space: ", x.space.available);
+  SDL.SDL_Init (SDL.SDL_INIT_VIDEO);
 }
