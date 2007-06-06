@@ -1,11 +1,8 @@
 import file, hardware;
 
-enum ServerType { web, government, university, smallbusiness, corporation };
-
 class Computer
 {
   IP ip;
-  ServerType type;
   char[] name;
 
   CPU[] cpus;
@@ -28,15 +25,12 @@ class Computer
       return max - used;
     }
   }
-  Space space; /// \todo: init in constructor
+  Space space;
 
   this (IP ip, char[] name) {
     this.ip = ip;
     this.name = name;
-  }
-
-  this (IP ip, char[] name, ServerType type) {
-    this (ip, name);
-    this.type = type;
+    space=new Space;
+    fs=new FileSystem;
   }
 }
