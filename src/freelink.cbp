@@ -31,8 +31,16 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="base.d" />
+		<Unit filename="computer.d" />
+		<Unit filename="contrib\SDL.d" />
+		<Unit filename="contrib\libgd.d" />
+		<Unit filename="file.d" />
+		<Unit filename="freelink.cbp" />
+		<Unit filename="freelink.d" />
 		<Unit filename="func.d" />
+		<Unit filename="hardware.d" />
+		<Unit filename="nls.d" />
+		<Unit filename="software.d" />
 		<Extensions>
 			<code_completion />
 		</Extensions>
