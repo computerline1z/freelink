@@ -1,3 +1,5 @@
+import nls;
+
 typedef uint kquad;  // KiloQuad, used in Star Trek and Uplink
 typedef uint gflops; // GigaFlops, deliciously ambiguous
 alias uint IP;     // Internet address

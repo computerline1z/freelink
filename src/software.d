@@ -1,5 +1,4 @@
 import file;
 
-class Software
-{
+class Software {
 }
