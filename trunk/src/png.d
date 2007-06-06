@@ -25,7 +25,7 @@ void putpixel(SDL_Surface *surf, int x, int y, ubyte[] data) {
   (cast(ubyte*)surf.pixels + y*surf.pitch + x*4)[0..4]=[data[2], data[1], data[0], 0];
 }
 
-void decode(ubyte[] data) {
+SDL_Surface *decode(ubyte[] data) {
   writefln("PNG decoding ", data.length);
   assert(data[0..8]==[cast(ubyte)137, 80, 78, 71, 13, 10, 26, 10], "Not a PNG file!");
   data=data[8..$];
@@ -87,7 +87,6 @@ void decode(ubyte[] data) {
   ubyte[][] lines;
   for (int y=0; y<height; ++y) {
     ubyte filter=chip!(ubyte)(decomp);
-    writefln("Filter type: ", ["None", "Sub", "Up", "Average", "Paeth"][filter]);
     auto scanline=decomp[0..width*bpp]; decomp=decomp[width*bpp..$];
     switch (filter) {
       case 0: break;
@@ -128,26 +127,16 @@ void decode(ubyte[] data) {
   }
   assert(!decomp.length, "Decompression failed: data left over");
 
-  auto screen=SDL_SetVideoMode(width, height, 32, SDL_SWSURFACE/* | SDL_FULLSCREEN*/);
+  auto result=SDL_CreateRGBSurface(0, width, height, depth, 0, 0, 0, 0);
   foreach (y, line; lines) {
     if (depth==8) {
       for (int x=0; x<width; ++x) {
-        putpixel(screen, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line), (color==2)?cast(ubyte)0:chip!(ubyte)(line)]);
+        putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line), (color==2)?cast(ubyte)0:chip!(ubyte)(line)]);
       }
-    } else {
-      assert(false);
-    }
+    } else assert(false, "Unsupported bit depth: "~.toString(depth));
   }
-  while (true) {
-    SDL_Event ev;
-    while (SDL_PollEvent(&ev)) {
-      if (ev.type==SDL_EventType.SDL_QUIT) return false;
-      if (ev.type==SDL_EventType.SDL_MOUSEBUTTONUP) with (ev.button) writefln("X: ", x, " Y: ", y);
-    }
-    SDL_Flip(screen);
-  }
-  
+  return result;
 }
 
 import std.file;
-static this() { decode(cast(ubyte[])read("test.png")); }
+//static this() { decode(cast(ubyte[])read("test.png")); }
