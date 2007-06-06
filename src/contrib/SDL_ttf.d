@@ -1,5 +1,5 @@
 module SDL_ttf;
-import SDL, tools.Tools, tools.buffer;
+import SDL;
 
 struct fontsettings {
   bool bold=false;
