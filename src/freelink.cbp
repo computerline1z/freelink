@@ -47,6 +47,7 @@
 		<Unit filename="func.d" />
 		<Unit filename="hardware.d" />
 		<Unit filename="nls.d" />
+		<Unit filename="png.d" />
 		<Unit filename="software.d" />
 		<Extensions>
 			<code_completion />
