@@ -1,1 +1,3 @@
 freelink=FreeLink
+[German]
+freelink=FreieVerbindung =)
