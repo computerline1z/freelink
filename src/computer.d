@@ -18,14 +18,14 @@ class Computer
     kquad max () {
       kquad x;
       foreach (d; drives)
-        x += d.maxSpace;
+        x += d.space;
       return x;
     }
     kquad used () {
-      return FS.used;
+      return fs.used;
     }
     kquad available () {
-      return max-used;
+      return max - used;
     }
   }
   Space space; /// \todo: init in constructor
