@@ -14,7 +14,7 @@ class Computer
 
   FileSystem fs;
 
-  final class Space () {
+  final class Space {
     kquad max () {
       kquad x;
       foreach (d; drives)
