@@ -28,6 +28,7 @@ class Computer
   Space space;
 
   this (IP ip, char[] name) {
+    space = new Space;
     this.ip = ip;
     this.name = name;
     space=new Space;
