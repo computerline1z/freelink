@@ -52,4 +52,4 @@ ReturnType!(CLASS, METHOD).type member(CLASS, char[] METHOD)(CLASS cl) {
 void sum(T)(inout T a, T b) { a+=b; }
 
 T fold(T)(T[] array, void delegate(inout T to, T from) dg) { assert(array.length); foreach (elem; array[1..$]) dg(array[0], elem); return array[0]; }
-T fold(T)(T[] array, void function(inout T to, T from) fn) { return fold(array, (inout T to, T from) { fn(to, from); }); }
+T fold(T, Bogus=void)(T[] array, void function(inout T to, T from) fn) { return fold(array, (inout T to, T from) { fn(to, from); }); }
