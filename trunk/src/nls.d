@@ -5,9 +5,11 @@ static this() {
   nls[""]=init;
   map(
     map(
-      map(
-        split(cast(char[])read("nls"~sep~"default.txt"), "\n"),/// split into lines
-        (char[] c) { if (c.length&&(c[$-1]=='\r')) c=c[0..$-1]; return c; } /// remove trailing \r
+      filter(
+        map(
+          split(cast(char[])read("nls"~sep~"default.txt"), "\n"),/// split into lines
+          (char[] c) { if (c.length&&(c[$-1]=='\r')) c=c[0..$-1]; return c; } /// remove trailing \r
+        ), (char[] line) { return line.find("=")!=-1; }
       ), (char[] c) { auto s=c.split("="); return [s[0], s[1..$].join("=")].dup; } /// split at =
     ), (char[][] pair) { nls[""][pair[0]]=pair[1]; assert(pair.length==2); } /// assign to AA
   );
