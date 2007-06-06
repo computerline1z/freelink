@@ -15,5 +15,12 @@ void main ()
   writefln (x.name);
   writefln (f.name);
   writefln ("Available space: ", x.space.available);
-  SDL_Init (SDL_INIT_VIDEO);
+
+  SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+  scope (exit) SDL_Quit;
+
+  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_HWSURFACE);
+  while (1) {
+    
+  }
 }
