@@ -1,6 +1,6 @@
 import computer, file;
 import std.stdio;
-import contrib.SDL;
+import SDL;
 
 void main ()
 {
@@ -9,5 +9,5 @@ void main ()
   Computer x = new Computer (0, "Localhost", ServerType.web);
   writefln (x.name);
   writefln (f.name);
-  writefln ("Available space: ", x.availableSpace);
+  writefln ("Available space: ", x.space.available);
 }

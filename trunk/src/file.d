@@ -21,12 +21,19 @@ class FileSystem {
   File[] files;
 
   File[] binary () {
-    return files.filter ((File f) {
+    return filter!(File) (files, (File f) {
       return f.runnable && !f.encryptionLevel; });
   }
 
   File[] data () {
-    return files.filter ((File f) {
+    return filter!(File) (files, (File f) {
       return !f.runnable; });
+  }
+
+  kquad used () {
+    kquad x;
+    foreach (f; files)
+      x += f.size;
+    return x;
   }
 }
