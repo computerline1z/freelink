@@ -17,13 +17,15 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
   else return res;
 }
 
-void putpixel(SDL_Surface *surf, int x, int y, ubyte[] data) {
+void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T data) {
   assert((data.length==3)||(data.length==4));
   //assert(surf.format.BytesPerPixel==data.length, format("Mismatch: ", surf.format.BytesPerPixel, "!=", data.length));
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
-  if (data.length==3) data=cast(ubyte)0~data; else if (data.length==4) data=data.dup; else assert(false, "Wrong data length");
-  (cast(ubyte*)surf.pixels + y*surf.pitch + x*4)[0..4]=data.reverse;
+  auto bpp=surf.format.BytesPerPixel;
+  assert(T.length!>bpp, format("Wrong data length: length(", T.length, ") > bpp(", bpp, ")  !"));
+  ubyte[T.length] target=void; foreach (i, d; data) target[i]=cast(ubyte)d;
+  (cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)[0..T.length]=target.reverse;
 }
 
 SDL_Surface *decode(void[] _data) {
@@ -128,16 +130,24 @@ SDL_Surface *decode(void[] _data) {
     lines[y]=scanline;
   }
   assert(!decomp.length, "Decompression failed: data left over");
+  writefln("Depth: ", bpp*8);
   auto result=SDL_CreateRGBSurface(0, width, height, bpp*8, 0, 0, 0, 0);
   foreach (y, line; lines) {
     if (depth==8) {
-      for (int x=0; x<width; ++x) {
-        putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line), (color==2)?cast(ubyte)0:chip!(ubyte)(line)]);
-      }
+      if (color==2)
+        for (int x=0; x<width; ++x) putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line)]);
+      else if (color==6)
+        for (int x=0; x<width; ++x) putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line)]);
     } else assert(false, "Unsupported bit depth: "~.toString(depth));
   }
   return result;
 }
 
-//import std.file;
-//static this() { auto discard=decode(cast(ubyte[])read("test.png")); }
+/*import std.file;
+static this() {
+  auto dec=decode(read(r"..\gfx\titlebar.png"));
+  auto screen=SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
+  SDL_BlitSurface(dec, null, screen, null);
+  while (true) SDL_Flip(screen);
+}
+*/
