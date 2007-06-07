@@ -1,13 +1,13 @@
 module gui;
-import SDL, png;
+import SDL, png, std.stdio;
 
 class Widget {
   SDL_Rect r;
   this (short x, short y, ushort w, ushort h) {
-    this.r.x = x;
-    this.r.y = y;
-    this.r.w = w;
-    this.r.h = h;
+    r.x = x;
+    r.y = y;
+    r.w = w;
+    r.h = h;
   }
   void draw (SDL_Surface *) {
   }
@@ -21,21 +21,16 @@ class Window : Widget {
   this (char[] title, short x, short y, ushort width, ushort height) {
     this.title = title;
     super (x, y, width, height);
-    this.titleBar = decode (cast(ubyte[])read("../gfx/titlebar.png"));
+    titleBar = decode (cast(ubyte[])read("../gfx/titlebar.png"));
   }
 
-  void startDrag () {
-    dragging = true;
-  }
-  void stopDrag (short x, short y) {
-    dragging = false;
-    this.r.x = x;
-    this.r.y = y;
-  }
   void draw (SDL_Surface *surf) {
     if (dragging) {
     } else {
-      SDL_BlitSurface (titleBar, &r, surf, &r);
+      SDL_Rect src=r;
+      with (src) { x=0; y=0; w=cast(ushort)(titleBar.w); h=cast(ushort)(titleBar.h); }
+      SDL_Rect dest=r;
+      SDL_BlitSurface (titleBar, &src, surf, &dest);
       putpixel (surf, r.x, r.y, [255, 255, 255]);
       putpixel (surf, r.x+r.w, r.y, [255, 255, 255]);
       putpixel (surf, r.x+r.w, r.y+r.h, [255, 255, 255]);

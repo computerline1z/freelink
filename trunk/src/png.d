@@ -128,7 +128,7 @@ SDL_Surface *decode(void[] _data) {
     lines[y]=scanline;
   }
   assert(!decomp.length, "Decompression failed: data left over");
-  auto result=SDL_CreateRGBSurface(0, width, height, depth, 0, 0, 0, 0);
+  auto result=SDL_CreateRGBSurface(0, width, height, bpp*8, 0, 0, 0, 0);
   foreach (y, line; lines) {
     if (depth==8) {
       for (int x=0; x<width; ++x) {
