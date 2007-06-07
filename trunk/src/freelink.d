@@ -1,6 +1,6 @@
 import computer, file, nls;
-import std.stdio;
-import SDL, gui;
+import std.stdio, std.file;
+import SDL, gui, xml;
 
 void main ()
 {
@@ -17,6 +17,7 @@ void main ()
   writefln ("Available space: ", x.space.available);
 
   Window testWindow = new Window ("Test");
+  auto frame=new Frame(FileSource(".."~sep~"gfx"), cast(xmlTag)parse(read(".."~sep~"gfx"~sep~"std-frame.xml")).children[0]);
 
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
   SDL_Event event;
@@ -36,7 +37,8 @@ void main ()
           break;
       }
     }
-    testWindow.draw(Area(screen));
+    frame.draw(Area(screen));
+    //testWindow.draw(Area(screen));
     SDL_Flip(screen);
   }
 }

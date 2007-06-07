@@ -23,6 +23,7 @@ class xmlTag : xmlElement {
   }
 }
 
+xmlTag parse(void[] xml) { return parse(cast(char[])xml); }
 xmlTag parse(char[] xml) {
   /// generate a flat list first
   xmlElement[] list;

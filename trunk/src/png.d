@@ -17,17 +17,37 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
   else return res;
 }
 
-void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T data) {
+SDL_Surface *MakeSurf(X, Y, B)(X width, Y height, B bpp) {
+  writefln("Create Surface: ", width, "/", height);
+  assert(width>0); assert(height>0);
+  return SDL_CreateRGBSurface(SDL_SWSURFACE, cast(ushort)width, cast(ushort)height, bpp, 0, 0, 0, 0);
+}
+
+struct ubyte_4_static { ubyte[4] array; }
+
+void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T _data) {
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
   auto bpp=surf.format.BytesPerPixel;
-  assert(T.length!>bpp, format("Wrong data length: length(", T.length, ") > bpp(", bpp, ")  !"));
-  ubyte[T.length] target=void; foreach (i, d; data) target[i]=cast(ubyte)d;
+  static if (is(T==ubyte_4_static)) ubyte[4] data=_data.array; else alias _data data;
+  assert(data.length!>bpp, format("Wrong data length: length(", data.length, ") > bpp(", bpp, ")  !"));
+  ubyte[data.length] target=void; foreach (i, d; data) target[i]=cast(ubyte)d;
   uint pix=void;
-  static if (T.length==4) pix=SDL_MapRGBA(surf.format, target[0], target[1], target[2], target[3]);
+  static if (data.length==4) pix=SDL_MapRGBA(surf.format, target[0], target[1], target[2], target[3]);
   else static if (T.length==3) pix=SDL_MapRGB(surf.format, target[0], target[1], target[2]);
   else static assert(false, "Error: BPP is "~toString(bpp));
   *cast(uint*)(cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)=pix;
+}
+
+ubyte_4_static getpixel(X, Y)(SDL_Surface *surf, X x, Y y) {
+  assert((x>=0)&&(x<surf.w));
+  assert((y>=0)&&(y<surf.h), "error: "~toString(y)~" out of bounds");
+  auto bpp=surf.format.BytesPerPixel;
+  uint pix=void;
+  uint pixel=*(cast(uint*)(cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp));
+  ubyte_4_static res=void;
+  with (res) SDL_GetRGBA(pixel, surf.format, &array[0], &array[1], &array[2], &array[3]);
+  return res;
 }
 
 SDL_Surface *decode(void[] _data) {
@@ -133,7 +153,7 @@ SDL_Surface *decode(void[] _data) {
   }
   assert(!decomp.length, "Decompression failed: data left over");
   writefln("Depth: ", bpp*8);
-  auto result=SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bpp*8, 0, 0, 0, 0);
+  auto result=MakeSurf(width, height, bpp*8);
   foreach (y, line; lines) {
     if (depth==8) {
       if (color==2)
