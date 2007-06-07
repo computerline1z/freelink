@@ -139,5 +139,5 @@ SDL_Surface *decode(void[] _data) {
   return result;
 }
 
-import std.file;
-static this() { auto discard=decode(cast(ubyte[])read("test.png")); }
+//import std.file;
+//static this() { auto discard=decode(cast(ubyte[])read("test.png")); }
