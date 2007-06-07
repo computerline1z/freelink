@@ -19,10 +19,10 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
 
 void putpixel(SDL_Surface *surf, int x, int y, ubyte[] data) {
   assert((data.length==3)||(data.length==4));
-  assert(surf.format.BytesPerPixel==data.length);
+  //assert(surf.format.BytesPerPixel==data.length, format("Mismatch: ", surf.format.BytesPerPixel, "!=", data.length));
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
-  if (data.length==3) data=cast(ubyte)0~data; else data=data.dup;
+  if (data.length==3) data=cast(ubyte)0~data; else if (data.length==4) data=data.dup; else assert(false, "Wrong data length");
   (cast(ubyte*)surf.pixels + y*surf.pitch + x*4)[0..4]=data.reverse;
 }
 
@@ -128,7 +128,6 @@ SDL_Surface *decode(void[] _data) {
     lines~=scanline;
   }
   assert(!decomp.length, "Decompression failed: data left over");
-
   auto result=SDL_CreateRGBSurface(0, width, height, depth, 0, 0, 0, 0);
   foreach (y, line; lines) {
     if (depth==8) {
