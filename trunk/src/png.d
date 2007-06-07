@@ -22,7 +22,8 @@ void putpixel(SDL_Surface *surf, int x, int y, ubyte[] data) {
   assert(surf.format.BytesPerPixel==data.length);
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
-  (cast(ubyte*)surf.pixels + y*surf.pitch + x*4)[0..4]=[data[2], data[1], data[0], 0];
+  if (data.length==3) data=cast(ubyte)0~data; else data=data.dup;
+  (cast(ubyte*)surf.pixels + y*surf.pitch + x*4)[0..4]=data.reverse;
 }
 
 SDL_Surface *decode(void[] _data) {
