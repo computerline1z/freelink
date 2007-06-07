@@ -130,7 +130,7 @@ SDL_Surface *decode(void[] _data) {
   assert(!decomp.length, "Decompression failed: data left over");
 
   auto result=SDL_CreateRGBSurface(0, width, height, depth, 0, 0, 0, 0);
-v  foreach (y, line; lines) {
+  foreach (y, line; lines) {
     if (depth==8) {
       for (int x=0; x<width; ++x) {
         putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line), (color==2)?cast(ubyte)0:chip!(ubyte)(line)]);
