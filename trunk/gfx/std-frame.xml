@@ -1,0 +1,10 @@
+<frame label="default">
+  <upper-left mode="stretch">default:black</upper-left>
+  <upper mode="repeat, fixed">titlebar.png</upper>
+  <upper-right mode="stretch">default:black</upper-right>
+  <left mode="fixed, repeat"><rotate mode="left">titlebar.png</rotate></left>
+  <right mode="fixed, repeat"><rotate mode="right">titlebar.png</rotate></right>
+  <lower-left mode="stretch">default:black</lower-left>
+  <lower mode="repeat, fixed"><rotate mode="180">titlebar.png</rotate></lower>
+  <lower-right mode="stretch">default:black</lower-right>
+</frame>
