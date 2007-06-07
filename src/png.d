@@ -29,7 +29,7 @@ void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T data) {
   static if (T.length==4) pix=SDL_MapRGBA(surf.format, target[0], target[1], target[2], target[3]);
   else static if (T.length==3) pix=SDL_MapRGB(surf.format, target[0], target[1], target[2]);
   else static assert(false, "Error: BPP is "~toString(bpp));
-  (cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)[bpp-T.length..bpp]=(cast(ubyte*)&pix)[bpp-T.length..bpp];
+  *cast(uint*)(cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)=pix;
 }
 
 SDL_Surface *decode(void[] _data) {
