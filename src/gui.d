@@ -12,7 +12,7 @@ class Window : Widget {
   SDL_Surface *titleBar;
   bool dragging;
 
-  this (char[] title, int x, int y, uint width, uint height) {
+  this (char[] title, short x, short y, ushort width, ushort height) {
     this.title = title;
     this.r.x = x;
     this.r.y = y;
@@ -24,7 +24,7 @@ class Window : Widget {
   void startDrag () {
     dragging = true;
   }
-  void stopDrag (int x, int y) {
+  void stopDrag (short x, short y) {
     dragging = false;
     this.r.x = x;
     this.r.y = y;

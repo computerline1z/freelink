@@ -45,6 +45,7 @@
 		<Unit filename="freelink.cbp" />
 		<Unit filename="freelink.d" />
 		<Unit filename="func.d" />
+		<Unit filename="gui.d" />
 		<Unit filename="hardware.d" />
 		<Unit filename="nls.d" />
 		<Unit filename="png.d" />
