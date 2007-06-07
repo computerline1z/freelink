@@ -18,7 +18,7 @@ void main ()
 
   Window testWindow = new Window ("Test");
 
-  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 24, SDL_SWSURFACE);
+  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
   SDL_Event event;
   bool running = true;
   while (running) {
@@ -36,7 +36,7 @@ void main ()
           break;
       }
     }
-    //testWindow.draw (screen);
-    SDL_UpdateRect (screen, 0, 0, 0, 0);
+    testWindow.draw(Area(screen));
+    SDL_Flip(screen);
   }
 }

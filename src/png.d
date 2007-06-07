@@ -1,6 +1,6 @@
 module png;
 
-import std.stdio, std.string, std.traits, std.zlib, func, contrib.SDL, std.math: abs;
+import std.stdio, std.string, std.traits, std.zlib, func, SDL, std.math: abs;
 
 template ArrayElemType(T: T[]) { alias T ArrayElemType; }
 
@@ -133,7 +133,7 @@ SDL_Surface *decode(void[] _data) {
   }
   assert(!decomp.length, "Decompression failed: data left over");
   writefln("Depth: ", bpp*8);
-  auto result=SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bpp*8, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+  auto result=SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bpp*8, 0, 0, 0, 0);
   foreach (y, line; lines) {
     if (depth==8) {
       if (color==2)
@@ -149,7 +149,7 @@ SDL_Surface *decode(void[] _data) {
 /*import std.file;
 static this() {
   auto dec=decode(read(r"..\gfx\titlebar.png"));
-  auto screen=SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
+  auto screen=SDL_SetVideoMode(512, 384, 32, SDL_SWSURFACE);
   SDL_BlitSurface(dec, null, screen, null);
   while (true) SDL_Flip(screen);
 }
