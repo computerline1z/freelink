@@ -11,7 +11,6 @@ class Connection {
 
 class Route {
   Computer[] nodes;
-
   invariant {
     assert (nodes.length > 2);
   }
