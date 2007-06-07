@@ -515,6 +515,7 @@ struct SDL_Cursor {
 	void *wm_cursor;		/* Window-manager cursor */
 }
 void *SDL_SetCursor(SDL_Cursor *);
-import std.system;
+SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, SDL_PixelFormat *fmt, uint flags);
+
 static this() { SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO); }
 static ~this() { SDL_Quit; }
