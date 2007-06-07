@@ -22,7 +22,6 @@ void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T data) {
   assert((y>=0)&&(y<surf.h));
   auto bpp=surf.format.BytesPerPixel;
   assert(T.length!>bpp, format("Wrong data length: length(", T.length, ") > bpp(", bpp, ")  !"));
-  //auto daa=data.dup.reverse;
   ubyte[T.length] target=void; foreach (i, d; data) target[i]=cast(ubyte)d;
   uint pix=void;
   static if (T.length==4) pix=SDL_MapRGBA(surf.format, target[0], target[1], target[2], target[3]);
@@ -134,13 +133,15 @@ SDL_Surface *decode(void[] _data) {
   }
   assert(!decomp.length, "Decompression failed: data left over");
   writefln("Depth: ", bpp*8);
-  auto result=SDL_CreateRGBSurface(0, width, height, bpp*8, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
+  auto result=SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bpp*8, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
+  auto f=result.format; assert(f.Rmask==0x000000ff); assert(f.Gmask==0x0000ff00);
   foreach (y, line; lines) {
     if (depth==8) {
       if (color==2)
         for (int x=0; x<width; ++x) putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line)]);
       else if (color==6)
         for (int x=0; x<width; ++x) putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line)]);
+      else assert(false);
     } else assert(false, "Unsupported bit depth: "~.toString(depth));
   }
   return result;
