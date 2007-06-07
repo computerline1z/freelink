@@ -1,10 +1,10 @@
 <frame label="default">
-  <top-left mode="stretch"><part from="0, 0" to="50%, 50%">button.png</part></top-left>
-  <top mode="repeat, fixed">titlebar.png</top>
-  <top-right mode="stretch"><part from="50%, 0" to="100%, 50%">button.png</part></top-right>
-  <left mode="fixed, repeat"><rotate mode="left">titlebar.png</rotate></left>
-  <right mode="fixed, repeat"><rotate mode="right">titlebar.png</rotate></right>
-  <bottom-left mode="stretch"><part from="0, 50%" to="50%, 100%">button.png</part></bottom-left>
-  <bottom mode="repeat, fixed"><rotate mode="180">titlebar.png</rotate></bottom>
-  <bottom-right mode="stretch"><part from="50%, 50%" to="100%, 100%">button.png</part></bottom-right>
+  <top-left><part from="0, 0" to="50%, 50%">button-small.png</part></top-left>
+  <top mode="repeat">titlebar.png</top>
+  <top-right><part from="50%, 0" to="100%, 50%">button-small.png</part></top-right>
+  <left mode="repeat"><rotate mode="left">titlebar.png</rotate></left>
+  <right mode="repeat"><rotate mode="right">titlebar.png</rotate></right>
+  <bottom-left><part from="0, 50%" to="50%, 100%">button-small.png</part></bottom-left>
+  <bottom mode="repeat"><rotate mode="180">titlebar.png</rotate></bottom>
+  <bottom-right><part from="50%, 50%" to="100%, 100%">button-small.png</part></bottom-right>
 </frame>
