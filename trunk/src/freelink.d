@@ -16,9 +16,6 @@ void main ()
   writefln (f.name);
   writefln ("Available space: ", x.space.available);
 
-  SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-  scope (exit) SDL_Quit;
-
   Window testWindow = new Window ("Test", 10, 10, 10, 20);
 
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
