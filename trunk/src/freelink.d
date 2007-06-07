@@ -16,7 +16,7 @@ void main ()
   writefln (f.name);
   writefln ("Available space: ", x.space.available);
 
-  Window testWindow = new Window ("Test", 10, 10, 48, 48);
+  Window testWindow = new Window ("Test");
 
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 24, SDL_SWSURFACE);
   SDL_Event event;
@@ -36,7 +36,7 @@ void main ()
           break;
       }
     }
-    testWindow.draw (screen);
+    //testWindow.draw (screen);
     SDL_UpdateRect (screen, 0, 0, 0, 0);
   }
 }

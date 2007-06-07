@@ -1,4 +1,4 @@
-module SDL;
+module contrib.SDL;
 
 extern (C) :
 struct SDL_ActiveEvent { ubyte type, gain, state; }
