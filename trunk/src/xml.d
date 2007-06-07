@@ -108,5 +108,5 @@ xmlTag parse(char[] xml) {
   return root;
 }
 
-import std.stdio, std.file;
-static this() { writefln(parse(cast(char[])read(r"..\gfx\std-frame.xml"))); std.c.stdlib.exit(0); }
+//import std.stdio, std.file;
+//static this() { writefln(parse(cast(char[])read(r"..\gfx\std-frame.xml"))); std.c.stdlib.exit(0); }
