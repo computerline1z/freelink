@@ -19,7 +19,7 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
 
 void putpixel(SDL_Surface *surf, int x, int y, ubyte[] data) {
   assert((data.length==3)||(data.length==4));
-  assert(surf.format.BytesPerPixel==4);
+  assert(surf.format.BytesPerPixel==data.length);
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
   (cast(ubyte*)surf.pixels + y*surf.pitch + x*4)[0..4]=[data[2], data[1], data[0], 0];
