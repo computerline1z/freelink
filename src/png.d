@@ -23,12 +23,13 @@ void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T data) {
   assert((y>=0)&&(y<surf.h));
   auto bpp=surf.format.BytesPerPixel;
   assert(T.length!>bpp, format("Wrong data length: length(", T.length, ") > bpp(", bpp, ")  !"));
+  //auto daa=data.dup.reverse;
   ubyte[T.length] target=void; foreach (i, d; data) target[i]=cast(ubyte)d;
   uint pix=void;
   static if (T.length==4) pix=SDL_MapRGBA(surf.format, target[0], target[1], target[2], target[3]);
   else static if (T.length==3) pix=SDL_MapRGB(surf.format, target[0], target[1], target[2]);
   else static assert(false, "Error: BPP is "~toString(bpp));
-  (cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)[0..T.length]=(cast(ubyte*)&pix)[0..T.length];
+  (cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)[bpp-T.length..bpp]=(cast(ubyte*)&pix)[bpp-T.length..bpp];
 }
 
 SDL_Surface *decode(void[] _data) {
