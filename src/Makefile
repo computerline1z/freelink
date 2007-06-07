@@ -7,4 +7,4 @@ all:
 	$(DC) -offreelink *.o $(LIBS)
 
 clean:
-	rm *.o
+	rm *.o *~
