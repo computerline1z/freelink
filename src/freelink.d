@@ -16,7 +16,7 @@ void main ()
   writefln (f.name);
   writefln ("Available space: ", x.space.available);
 
-  Window testWindow = new Window ("Test", 10, 10, 10, 20);
+  Window testWindow = new Window ("Test", 10, 10, 48, 48);
 
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
   SDL_Event event;
