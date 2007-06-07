@@ -1,16 +1,15 @@
 module gui;
 import contrib.SDL, png, std.stdio, std.file;;
 
+class Area {
+  SDL_Rect me; SDL_Surface *mine;
+  this(SDL_Rect  r, SDL_Surface *s) { me=r; mine=s; }
+  static Area opCall(SDL_Rect r, SDL_Surface *s) { return new Area(r, s); }
+  //int blit(
+}
+
 class Widget {
-  SDL_Rect r;
-  this (short x, short y, ushort w, ushort h) {
-    r.x = x;
-    r.y = y;
-    r.w = w;
-    r.h = h;
-  }
-  void draw (SDL_Surface *) {
-  }
+  abstract void draw (Area);
 }
 
 class Window : Widget {
@@ -18,16 +17,15 @@ class Window : Widget {
   SDL_Surface *titleBar;
   bool dragging;
 
-  this (char[] title, short x, short y, ushort width, ushort height) {
+  this (char[] title) {
     this.title = title;
-    super (x, y, width, height);
-    titleBar = decode (cast(ubyte[])read("../gfx/titlebar.png"));
+    titleBar = decode (read("../gfx/titlebar.png"));
   }
 
-  void draw (SDL_Surface *surf) {
+  void draw (Area target) {
     if (dragging) {
     } else {
-      SDL_Rect src;
+      /*SDL_Rect src;
       with (src) { x=0; y=0; w=cast(ushort)(titleBar.w); h=cast(ushort)(titleBar.h); }
       SDL_Rect dest=r;
       SDL_Surface *temp=SDL_ConvertSurface(titleBar, surf.format, SDL_SWSURFACE);
@@ -36,16 +34,13 @@ class Window : Widget {
       putpixel (surf, r.x, r.y, [255, 255, 255]);
       putpixel (surf, r.x+r.w, r.y, [255, 255, 255]);
       putpixel (surf, r.x+r.w, r.y+r.h, [255, 255, 255]);
-      putpixel (surf, r.x, r.y+r.h, [255, 255, 255]);
+      putpixel (surf, r.x, r.y+r.h, [255, 255, 255]);*/
     }
   }
 }
 
 class Button : Widget {
   char[] caption;
-  this () {
-    super (0, 0, 10, 10);
-  }
   void draw (SDL_Surface *surf) {
   }
 }

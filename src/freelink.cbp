@@ -50,6 +50,8 @@
 		<Unit filename="nls.d" />
 		<Unit filename="png.d" />
 		<Unit filename="software.d" />
+		<Unit filename="util.d" />
+		<Unit filename="xml.d" />
 		<Extensions>
 			<code_completion />
 		</Extensions>
