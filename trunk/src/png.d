@@ -19,13 +19,17 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
 
 void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T data) {
   assert((data.length==3)||(data.length==4));
-  //assert(surf.format.BytesPerPixel==data.length, format("Mismatch: ", surf.format.BytesPerPixel, "!=", data.length));
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
   auto bpp=surf.format.BytesPerPixel;
   assert(T.length!>bpp, format("Wrong data length: length(", T.length, ") > bpp(", bpp, ")  !"));
   ubyte[T.length] target=void; foreach (i, d; data) target[i]=cast(ubyte)d;
-  (cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)[0..T.length]=target.reverse;
+  static if (T.length==4) {
+    *cast(uint*)(cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)=SDL_MapRGBA(surf.format, target[0], target[1], target[2], target[3]);
+  } else static if (T.length==3) {
+    uint pix=SDL_MapRGB(surf.format, target[0], target[1], target[2]);
+    (cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)[0..3]=(cast(ubyte*)&pix)[0..3];
+  } else static assert(false, "Error: BPP is "~toString(bpp));
 }
 
 SDL_Surface *decode(void[] _data) {
