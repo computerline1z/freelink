@@ -18,7 +18,6 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
 }
 
 void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T data) {
-  assert((data.length==3)||(data.length==4));
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
   auto bpp=surf.format.BytesPerPixel;
@@ -135,7 +134,7 @@ SDL_Surface *decode(void[] _data) {
   }
   assert(!decomp.length, "Decompression failed: data left over");
   writefln("Depth: ", bpp*8);
-  auto result=SDL_CreateRGBSurface(0, width, height, bpp*8, 0, 0, 0, 0);
+  auto result=SDL_CreateRGBSurface(0, width, height, bpp*8, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
   foreach (y, line; lines) {
     if (depth==8) {
       if (color==2)
