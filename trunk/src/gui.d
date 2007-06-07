@@ -1,5 +1,5 @@
 module gui;
-import SDL, png, std.stdio;
+import SDL, png, std.stdio, std.file;;
 
 class Widget {
   SDL_Rect r;
@@ -12,7 +12,7 @@ class Widget {
   void draw (SDL_Surface *) {
   }
 }
-import std.file;
+
 class Window : Widget {
   char[] title;
   SDL_Surface *titleBar;
@@ -27,7 +27,7 @@ class Window : Widget {
   void draw (SDL_Surface *surf) {
     if (dragging) {
     } else {
-      SDL_Rect src=r;
+      SDL_Rect src;
       with (src) { x=0; y=0; w=cast(ushort)(titleBar.w); h=cast(ushort)(titleBar.h); }
       SDL_Rect dest=r;
       SDL_BlitSurface (titleBar, &src, surf, &dest);
