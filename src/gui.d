@@ -1,5 +1,5 @@
 module gui;
-import SDL, png, std.stdio, std.file;;
+import contrib.SDL, png, std.stdio, std.file;;
 
 class Widget {
   SDL_Rect r;
@@ -30,7 +30,9 @@ class Window : Widget {
       SDL_Rect src;
       with (src) { x=0; y=0; w=cast(ushort)(titleBar.w); h=cast(ushort)(titleBar.h); }
       SDL_Rect dest=r;
+      SDL_Surface *temp=SDL_ConvertSurface(titleBar, surf.format, SDL_SWSURFACE);
       SDL_BlitSurface (titleBar, &src, surf, &dest);
+      SDL_FreeSurface(temp);
       putpixel (surf, r.x, r.y, [255, 255, 255]);
       putpixel (surf, r.x+r.w, r.y, [255, 255, 255]);
       putpixel (surf, r.x+r.w, r.y+r.h, [255, 255, 255]);
