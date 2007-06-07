@@ -3,6 +3,12 @@ import SDL, png;
 
 class Widget {
   SDL_Rect r;
+  this (short x, short y, ushort w, ushort h) {
+    this.r.x = x;
+    this.r.y = y;
+    this.r.w = w;
+    this.r.h = h;
+  }
   void draw (SDL_Surface *) {
   }
 }
@@ -14,11 +20,8 @@ class Window : Widget {
 
   this (char[] title, short x, short y, ushort width, ushort height) {
     this.title = title;
-    this.r.x = x;
-    this.r.y = y;
-    this.r.w = width;
-    this.r.h = height;
-    this.titleBar = decode (cast(ubyte[])read("titlebar.png"));
+    super (x, y, width, height);
+    this.titleBar = decode (cast(ubyte[])read("../gfx/titlebar.png"));
   }
 
   void startDrag () {
@@ -43,6 +46,9 @@ class Window : Widget {
 
 class Button : Widget {
   char[] caption;
+  this () {
+    super (0, 0, 10, 10);
+  }
   void draw (SDL_Surface *surf) {
   }
 }
