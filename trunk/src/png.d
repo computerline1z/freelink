@@ -71,7 +71,7 @@ SDL_Surface *decode(void[] _data) {
   writefln("Decompressed ", decomp.length, " bytes");
   int bpp; bpp=[0, 0, 3, 0, 0, 0, 4][color]*[8: 1, 16: 2, 24: 3, 32: 4][depth];
   writefln("Pixel size: ", bpp);
-  static ubyte limit(int v) { while (v<0) v+=256; while (v>=256) v-=256; return cast(ubyte)v; }
+  static ubyte limit(int v) { while (v<0) v+=256; return cast(ubyte)v; }
   // taken from the RFC literally
   static ubyte PaethPredictor(ubyte a, ubyte b, ubyte c) {
     //a = left, b = above, c = upper left
@@ -139,5 +139,5 @@ SDL_Surface *decode(void[] _data) {
   return result;
 }
 
-import std.file;
+//import std.file;
 //static this() { decode(cast(ubyte[])read("test.png")); }
