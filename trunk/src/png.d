@@ -86,7 +86,7 @@ SDL_Surface *decode(void[] _data) {
       else if (pb <= pc) return b;
       else return c;
   }
-  ubyte[][] lines;
+  ubyte[][] lines; lines.length=height;
   for (int y=0; y<height; ++y) {
     ubyte filter=chip!(ubyte)(decomp);
     auto scanline=decomp[0..width*bpp]; decomp=decomp[width*bpp..$];
@@ -100,14 +100,14 @@ SDL_Surface *decode(void[] _data) {
       break;
       /// up: add previous line
       case 2: foreach (i, inout entry; scanline) {
-        ubyte up=0; if (lines.length) up=lines[$-1][i];
+        ubyte up=0; if (lines.length) up=lines[y-1][i];
         entry=limit(entry+up);
       }
       break;
       /// average: (sub+up)/2
       case 3: foreach (i, inout entry; scanline) {
         ubyte left=0; if (i!<bpp) left=scanline[i-bpp];
-        ubyte up=0; if (lines.length) up=lines[$-1][i];
+        ubyte up=0; if (lines.length) up=lines[y-1][i];
         entry=limit(entry+(left+up)/2);
       }
       break;
@@ -117,15 +117,15 @@ SDL_Surface *decode(void[] _data) {
         if (i!<bpp) left=scanline[i-bpp];
         ubyte up=0; ubyte upleft=0;
         if (lines.length) {
-          up=lines[$-1][i];
-          if (i!<bpp) upleft=lines[$-1][i-bpp];
+          up=lines[y-1][i];
+          if (i!<bpp) upleft=lines[y-1][i-bpp];
         }
         entry=limit(entry+PaethPredictor(left, up, upleft));
       }
       break;
       default: assert(false);
     }
-    lines~=scanline;
+    lines[y]=scanline;
   }
   assert(!decomp.length, "Decompression failed: data left over");
   auto result=SDL_CreateRGBSurface(0, width, height, depth, 0, 0, 0, 0);
@@ -140,4 +140,4 @@ SDL_Surface *decode(void[] _data) {
 }
 
 import std.file;
-static this() { decode(cast(ubyte[])read("test.png")); }
+static this() { auto discard=decode(cast(ubyte[])read("test.png")); }
