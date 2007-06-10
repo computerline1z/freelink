@@ -1,6 +1,6 @@
 module xml;
 
-import util, func, std.string;
+import util, func, mystring;
 
 interface xmlElement { char[] toString(); };
 
@@ -36,10 +36,10 @@ xmlTag parse(char[] xml) {
     addText(xml[0..nextTag]);
     xml=xml[nextTag+1..$];
     char[][] parts; parts.length=1; /// space separated
-    
+
     assert(xml.find(">")!=-1);
     size_t endTag=xml.find(">");
-    
+
     mixin(const_enum!(ubyte, "tmNormal, tmString"));
     ubyte mode=tmNormal;
     /// read tag into parts
@@ -57,7 +57,7 @@ xmlTag parse(char[] xml) {
         default: assert(false, "uh wtf");
       }
     }
-    
+
     auto newtag=new xmlTag;
     with (newtag) {
       name=parts[0];

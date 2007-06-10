@@ -1,4 +1,4 @@
-import std.utf, std.file, std.string, func, std.path: sep;
+import std.utf, std.file, mystring, func, std.path: sep;
 
 static this() {
   char[][char[]] init;
