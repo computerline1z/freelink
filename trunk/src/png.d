@@ -94,7 +94,8 @@ SDL_Surface *decode(void[] _data) {
   writefln("Decompressing");
   auto decomp=cast(ubyte[])uncompress(cast(char[])compressed);
   writefln("Decompressed ", decomp.length, " bytes");
-  int bpp; bpp=[0, 0, 3, 0, 0, 0, 4][color]*[8: 1, 16: 2, 24: 3, 32: 4][depth];
+  assert((depth==8)||(depth==16)||(depth==24)||(depth==32));
+  int bpp; bpp=[0, 0, 3, 0, 0, 0, 4][color]*(depth/8);
   writefln("Pixel size: ", bpp);
   static ubyte limit(int v) { while (v<0) v+=256; return cast(ubyte)v; }
   // taken from the RFC literally

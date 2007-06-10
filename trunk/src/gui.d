@@ -9,7 +9,7 @@ class FileSource {
     return read(basepath~sep~name);
   }
 }
- 
+
 class Area {
   SDL_Rect me; SDL_Surface *mine;
   int w() { return me.w; } int h() { return me.h; }
@@ -46,12 +46,12 @@ class Window : Widget {
     this.title = title;
     titleBar = decode (read("../gfx/titlebar.png"));
   }
-  
+
   void draw (Area target) {
     target.blit(titleBar, 10, 10);
   }
 }
- 
+
 class Button : Widget {
   char[] caption;
   SDL_Surface *clickedImg, normalImg;
@@ -131,7 +131,7 @@ class Frame : Widget {
               break;
             default: assert(false, "Unknown rotate mode: "~mode);
           }
-          break;  
+          break;
         default: assert(false, "Unknown transformation: "~tag.name);
       }
     });
@@ -152,7 +152,7 @@ class Frame : Widget {
     }
     // extract the SDL surfaces for the stuffies
     foreach (name, tree; entries) parts[name]=getSurface(tree);
-    
+
     // use the modes to determine the border sizes
     foreach (n; ["top-left", "top-right", "bottom-left", "bottom-right"])
       assert(!(n in modestr), "Error: The size of corners is determined by the sides");
@@ -165,9 +165,10 @@ class Frame : Widget {
     mustBeEqual(parts["bottom-left"].h, parts["bottom"].h, parts["bottom-right"].h);
     mustBeEqual(parts["top-left"].w, parts["left"].w, parts["bottom-left"].w);
     mustBeEqual(parts["top-right"].w, parts["right"].w, parts["bottom-right"].w);
-    static ubyte[char[]] map; if (!map.keys.length)
-      map=["repeat".dup: 0, "stretch": 1];
-    modes=[map[modestr["top"]], map[modestr["left"]], map[modestr["right"]], map[modestr["bottom"]]];
+    // static ubyte[char[]] map; if (!map.keys.length)
+    // map=["repeat".dup: 0, "stretch": 1]; // no associative arrays on gdc .23 :(
+    ubyte map(char[] mode) { if (mode=="repeat") return 0; if (mode=="stretch") return 1; assert(false, "Invalid mode!"); }
+    modes=[map=modestr["top"], map=modestr["left"], map=modestr["right"], map=modestr["bottom"]];
   }
   void draw(Area target) {
     // draw the frame
@@ -175,9 +176,9 @@ class Frame : Widget {
     target.blit(parts["top-right"], target.w-parts["top-right"].w, 0);
     target.blit(parts["bottom-left"], 0, target.h-parts["bottom-left"].h);
     target.blit(parts["bottom-right"], target.w-parts["bottom-right"].w, target.h-parts["bottom-right"].h);
-    
+
     foreach (m; modes) assert(m==0, r"\todo: implement stretching");
-    
+
     // draw horizontal stripes
     int offs=parts["top-left"].w;
     while (offs+parts["top"].w<target.w-parts["top-right"].w) {
@@ -187,7 +188,7 @@ class Frame : Widget {
     }
     target.blit(parts["top"], offs, 0, target.w-parts["top-right"].w-offs, parts["top"].h);
     target.blit(parts["bottom"], offs, target.h-parts["bottom"].h, target.w-parts["top-right"].w-offs, parts["top"].h);
-    
+
     // draw vertical stripes
     offs=parts["top-left"].h;
     while (offs+parts["left"].h<target.h-parts["bottom-left"].h) {
