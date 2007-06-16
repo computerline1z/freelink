@@ -67,10 +67,8 @@ SDL_Surface *decode(void[] _data) {
       case "tEXt": writefln("Text data: ", split(cast(char[])chunk, "\0")[0], "==", split(cast(char[])chunk, "\0")[1]); break;
       case "IDAT": compressed~=chunk; break;
       case "IHDR":
-        writefln("Header");
         width=chip!(uint, true)(chunk); height=chip!(uint, true)(chunk); depth=chip!(ubyte)(chunk);
         color=chip!(ubyte)(chunk);
-        writefln("Color mode: ", ["Grayscale", "Invalid", "RGB", "Palette", "Grayscale/Alpha", "Invalid", "RGBA"][color]);
         assert((color==2)||(color==6), "Invalid color mode: only RGB(A) supported");
         auto compm=chip!(ubyte)(chunk);
         assert(compm==0, "Unsupported compression method "~.toString(compm));
@@ -79,24 +77,19 @@ SDL_Surface *decode(void[] _data) {
         auto interlace=chip!(ubyte)(chunk);
         assert(!interlace, "Interlacing not yet supported");
         writefln("Width: ", width, " Height: ", height, " Depth: ", depth);
-        writefln("Undecoded: ", chunk.length);
       break;
       default:
-        writefln("Chunk type ", type, ": ",
+        /*writefln("Chunk type ", type, ": ",
           upper[0]?"Critical":"Ancilliary", ", ",
           upper[1]?"Public":"Private", ", ",
           upper[3]?"Unsafe2c":"Safe2c"
-        );
+        );*/
       break;
     }
   }
-  writefln(compressed.length, " compressed bytes");
-  writefln("Decompressing");
   auto decomp=cast(ubyte[])uncompress(cast(char[])compressed);
-  writefln("Decompressed ", decomp.length, " bytes");
   assert((depth==8)||(depth==16)||(depth==24)||(depth==32));
   int bpp; bpp=[0, 0, 3, 0, 0, 0, 4][color]*(depth/8);
-  writefln("Pixel size: ", bpp);
   static ubyte limit(int v) { while (v<0) v+=256; return cast(ubyte)v; }
   // taken from the RFC literally
   static ubyte PaethPredictor(ubyte a, ubyte b, ubyte c) {
@@ -153,7 +146,6 @@ SDL_Surface *decode(void[] _data) {
     lines[y]=scanline;
   }
   assert(!decomp.length, "Decompression failed: data left over");
-  writefln("Depth: ", bpp*8);
   auto result=MakeSurf(width, height, bpp*8);
   foreach (y, line; lines) {
     if (depth==8) {

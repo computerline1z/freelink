@@ -7,8 +7,8 @@
 		<Option compiler="gdc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin\Debug\freelink.exe" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj\Debug\" />
+				<Option output="bin/Debug/freelink" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gdc" />
 				<Compiler>
@@ -16,8 +16,8 @@
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="bin\Release\freelink.exe" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj\Release\" />
+				<Option output="bin/Release/freelink" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gdc" />
 				<Compiler>
@@ -33,21 +33,19 @@
 			<Add directory="contrib" />
 		</Compiler>
 		<Linker>
-			<Add option="-static" />
 			<Add library="SDL" />
-			<Add library="winmm" />
-			<Add library="gdi32" />
 		</Linker>
 		<Unit filename="computer.d" />
 		<Unit filename="connection.d" />
-		<Unit filename="contrib\SDL.d" />
-		<Unit filename="contrib\libgd.d" />
+		<Unit filename="contrib/SDL.d" />
+		<Unit filename="contrib/libgd.d" />
 		<Unit filename="file.d" />
 		<Unit filename="freelink.cbp" />
 		<Unit filename="freelink.d" />
 		<Unit filename="func.d" />
 		<Unit filename="gui.d" />
 		<Unit filename="hardware.d" />
+		<Unit filename="mystring.d" />
 		<Unit filename="nls.d" />
 		<Unit filename="png.d" />
 		<Unit filename="software.d" />
