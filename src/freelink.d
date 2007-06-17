@@ -17,7 +17,9 @@ void main ()
   writefln ("Available space: ", x.space.available);
 
   Window testWindow = new Window ("Test");
-  auto frame=new Frame(FileSource(".."~sep~"gfx"), cast(xmlTag)parse(read(".."~sep~"gfx"~sep~"std-frame.xml")).children[0]);
+  auto fsrc=new FileSource(".."~sep~"gfx");
+  auto stdframe=cast(xmlTag)parse(read(".."~sep~"gfx"~sep~"std-frame.xml")).children[0];
+  auto frame=new Frame(fsrc, stdframe, new Frame(fsrc, stdframe, new Nothing));
 
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
   SDL_Event event;
