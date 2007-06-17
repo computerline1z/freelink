@@ -15,7 +15,7 @@ const invalid=size_t.max;
 class Area {
   SDL_Rect me; SDL_Surface *mine;
   int w() { return me.w; } int h() { return me.h; }
-  this(SDL_Rect  r, SDL_Surface *s) { me=r; mine=s; }
+  this(SDL_Rect r, SDL_Surface *s) { me=r; mine=s; }
   static Area opCall(SDL_Surface *s, SDL_Rect *r=null) {
     if (!r) {
       SDL_Rect full; with (full) { x=0; y=0; w=cast(ushort)s.w; h=cast(ushort)s.h; }
@@ -26,16 +26,26 @@ class Area {
   int blit (SDL_Surface *surf, size_t x=0, size_t y=0, size_t w=0, size_t h=0) { /// blit surf on me at x, y
     SDL_Rect dest = void;
     if (!w) w=cast(ushort)surf.w; if (!h) h=cast(ushort)surf.h;
-    dest.x=cast(short)x; dest.y=cast(short)y;
+    dest.x=cast(short)(x+me.x); dest.y=cast(short)(y+me.y);
     dest.w=cast(ushort)w; dest.h=cast(ushort)h;
     SDL_Rect src=dest;
     src.x=0; src.y=0;
     return SDL_BlitSurface (surf, &src, mine, &dest);
   }
+  Area select(size_t x, size_t y, size_t w, size_t h) {
+    SDL_Rect nr=void; nr.x=cast(short)(x+me.x); nr.y=cast(short)(y+me.y); nr.w=cast(ushort)w; nr.h=cast(ushort)h;
+    return new Area(nr, mine);
+  }
 }
 
 class Widget {
   abstract void draw (Area);
+}
+
+class ContainerWidget : Widget {
+  private Widget _below;
+  void below (Widget w) { _below=w; }
+  Widget below () { return _below; }
 }
 
 interface Generator {
@@ -68,6 +78,8 @@ class Button : Widget {
   }
 }
 
+class Nothing : Widget { void draw (Area target) { } }
+
 long eatoi(char[] nr, int max) {
   assert(nr.length);
   if (nr[$-1]=='%') return (max*atoi(nr[0..$-1]))/100;
@@ -75,7 +87,7 @@ long eatoi(char[] nr, int max) {
 }
 
 import xml, util, std.string;
-class Frame : Widget {
+class Frame : ContainerWidget {
   FileSource fsrc;
   private {
     Generator [char[]] parts;
@@ -221,7 +233,8 @@ class Frame : Widget {
     assert(res); return res;
   }
   /// constructor
-  this(FileSource fsrc, xmlTag frame) {
+  this(FileSource fsrc, xmlTag frame, Widget w) {
+    below=w;
     this.fsrc=fsrc;
     assert(frame.name=="frame", "Frame tag data not actually frame");
     xmlElement[char[]] entries;
@@ -252,5 +265,10 @@ class Frame : Widget {
     target.blit(getSurf("left", invalid, target.h-getSurf("top-left").h-getSurf("bottom-left").h), 0, getSurf("top-left").h);
     auto right=getSurf("right", invalid, target.h-getSurf("top-right").h-getSurf("bottom-right").h);
     target.blit(right, target.w-right.w, getSurf("top-right").h);
+
+    // draw below
+    assert (below);
+    auto tlw=getSurf("top-left").w; auto tlh=getSurf("top-left").h;
+    below.draw(target.select(tlw, tlh, target.w-tlw-getSurf("bottom-right").w, target.h-tlh-getSurf("bottom-right").h));
   }
 }
