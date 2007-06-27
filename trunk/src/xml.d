@@ -62,7 +62,7 @@ xmlTag parse(char[] xml) {
     with (newtag) {
       name=parts[0];
       foreach (pair; map(parts[1..$], (char[] c) { auto sp=c.split("="); return [sp[0], sp[1..$].join("=")].dup; })) {
-        attributes[pair[0]]=pair[1];
+        attributes[pair[0]]=pair[1].dup;
       }
     }
     list~=newtag;
@@ -105,7 +105,7 @@ xmlTag parse(char[] xml) {
     }
   }
   treeify(list);
-  auto root=new xmlTag; root.name=""; root.children=list;
+  auto root=new xmlTag; root.children=list;
   return root;
 }
 

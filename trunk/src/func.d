@@ -36,7 +36,7 @@ ArrayOrVoid!(U) map(T, U, Bogus=void)(T[] array, U function(T) fn) {
   return map(array, (T foo) { return fn(foo); });
 }
 
-template ReturnType(C, char[] M) {
+template ReturnType(C, string M) {
   const C test=void;
   mixin("static if (is(C."~M~"==delegate)) {
     alias typeof(test."~M~"()) type;
@@ -45,11 +45,9 @@ template ReturnType(C, char[] M) {
   }");
 }
 
-ReturnType!(CLASS, METHOD).type member(CLASS, char[] METHOD)(CLASS cl) {
-  mixin("return cl."~METHOD~"; ");
-}
+template member(CLASS, string METHOD) { const member=function(CLASS cl) { mixin("return cl."~METHOD~"; "); }; }
 
-void sum(T)(inout T a, T b) { a+=b; }
+template sum(T) { const sum=function(inout T a, T b) { a+=b; }; }
 
 T fold(T)(T[] array, void delegate(inout T to, T from) dg) { assert(array.length); foreach (elem; array[1..$]) dg(array[0], elem); return array[0]; }
 T fold(T, Bogus=void)(T[] array, void function(inout T to, T from) fn) { return fold(array, (inout T to, T from) { fn(to, from); }); }

@@ -19,40 +19,37 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
 
 SDL_Surface *MakeSurf(X, Y, B)(X width, Y height, B bpp) {
   writefln("Create Surface: ", width, "/", height);
+  assert(width!=size_t.max); assert(height!=size_t.max);
+  scope(exit) writefln("/Create");
   assert(width>0); assert(height>0);
   return SDL_CreateRGBSurface(SDL_SWSURFACE, cast(ushort)width, cast(ushort)height, bpp, 0, 0, 0, 0);
 }
 
-struct ubyte_4_static { ubyte[4] array; }
-
-void putpixel(T, X, Y)(SDL_Surface *surf, X x, Y y, T _data) {
+void putpixel(X, Y)(SDL_Surface *surf, X x, Y y, ubyte[] data) {
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h));
+  //static assert(is(T == ubyte[4]) || is(T == ubyte[3]), "Faulty T being "~T.stringof);
   auto bpp=surf.format.BytesPerPixel;
-  static if (is(T==ubyte_4_static)) ubyte[4] data=_data.array; else alias _data data;
   assert(data.length!>bpp, format("Wrong data length: length(", data.length, ") > bpp(", bpp, ")  !"));
-  ubyte[data.length] target=void; foreach (i, d; data) target[i]=cast(ubyte)d;
   uint pix=void;
-  static if (data.length==4) pix=SDL_MapRGBA(surf.format, target[0], target[1], target[2], target[3]);
-  else static if (T.length==3) pix=SDL_MapRGB(surf.format, target[0], target[1], target[2]);
-  else static assert(false, "Error: BPP is "~toString(bpp));
+  if (data.length==4) pix=SDL_MapRGBA(surf.format, data[0], data[1], data[2], data[3]);
+  else if (data.length==3) pix=SDL_MapRGB(surf.format, data[0], data[1], data[2]);
+  else assert(false, "Error: BPP is "~toString(bpp));
   *cast(uint*)(cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp)=pix;
 }
 
-ubyte_4_static getpixel(X, Y)(SDL_Surface *surf, X x, Y y) {
+ubyte[] getpixel(X, Y)(SDL_Surface *surf, X x, Y y) {
   assert((x>=0)&&(x<surf.w));
   assert((y>=0)&&(y<surf.h), "error: "~toString(y)~" out of bounds");
   auto bpp=surf.format.BytesPerPixel;
   uint pix=void;
   uint pixel=*(cast(uint*)(cast(ubyte*)surf.pixels + y*surf.pitch + x*bpp));
-  ubyte_4_static res=void;
-  with (res) SDL_GetRGBA(pixel, surf.format, &array[0], &array[1], &array[2], &array[3]);
-  return res;
+  auto array=new ubyte[4]; SDL_GetRGBA(pixel, surf.format, &array[0], &array[1], &array[2], &array[3]);
+  return array;
 }
 
 SDL_Surface *decode(void[] _data) {
   ubyte[] data=cast(ubyte[])_data;
-  writefln("PNG decoding ", data.length);
   assert(data[0..8]==[cast(ubyte)137, 80, 78, 71, 13, 10, 26, 10], "Not a PNG file!");
   data=data[8..$];
   ubyte[] compressed;
@@ -147,23 +144,14 @@ SDL_Surface *decode(void[] _data) {
   }
   assert(!decomp.length, "Decompression failed: data left over");
   auto result=MakeSurf(width, height, bpp*8);
-  foreach (y, line; lines) {
+  foreach (y, inout line; lines) {
     if (depth==8) {
       if (color==2)
-        for (int x=0; x<width; ++x) putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line)]);
+        for (int x=0; x<width; ++x) putpixel(result, x, y, chip!(ubyte[3])(line));
       else if (color==6)
-        for (int x=0; x<width; ++x) putpixel(result, x, y, [chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line), chip!(ubyte)(line)]);
+        for (int x=0; x<width; ++x) putpixel(result, x, y, chip!(ubyte[4])(line));
       else assert(false);
     } else assert(false, "Unsupported bit depth: "~.toString(depth));
   }
   return result;
 }
-
-/*import std.file;
-static this() {
-  auto dec=decode(read(r"..\gfx\titlebar.png"));
-  auto screen=SDL_SetVideoMode(512, 384, 32, SDL_SWSURFACE);
-  SDL_BlitSurface(dec, null, screen, null);
-  while (true) SDL_Flip(screen);
-}
-*/

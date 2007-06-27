@@ -7,29 +7,7 @@ struct fontsettings {
   bool underline=false;
 }
 
-import std.md5: sum;
-
-struct tcsrtb {
-  char[] text;
-  SDL_Color col;
-  fontsettings settings;
-  SDL_Color *bg;
-  static int cmp(int a, int b) { if (a<b) return -1; if (a>b) return 1; return 0; }
-  int opCmp(tcsrtb s) {
-    int myCol=col.r*65536+col.g*256+col.b;
-    int otherCol=s.col.r*65536+s.col.g*256+s.col.b;
-    int c=cmp(myCol, otherCol); if (c!=0) return c;
-    int f1; with (settings) f1=bold?4:0+italic?2:0+underline?1:0;
-    int f2; with (s.settings) f2=bold?4:0+italic?2:0+underline?1:0;
-    c=cmp(f1, f2); if (c!=0) return c;
-    return  std.string.cmp(this.text, s.text);
-  }
-  uint toHash() {
-    uint e; foreach (ubyte b; (cast(ubyte*)this)[col.offsetof..(*this).sizeof]) e^=b;
-    foreach (ubyte b; cast(ubyte[])text) e^=b;
-    return e;
-  }
-}
+import std.string: toStringz, toString;
 
 class TTF_FontClass {
   static this() { if (!TTF_WasInit) TTF_Init; }
@@ -41,60 +19,29 @@ class TTF_FontClass {
   int lineskip() { return TTF_FontLineSkip(font); }
   static fontsettings Default;
 
-  buffer!(SDL_Surface*, tcsrtb) surf_buffer=null;
-  private SDL_Surface *dgRender(tcsrtb param) { with (param) return _render(text, col, settings, 2, bg); }
-  this() {
-    surf_buffer=new typeof(surf_buffer)(&dgRender, delegate uint(SDL_Surface *surf) {
-      if (!surf) return 0;
-      return surf.w*surf.h;
-    }, 512*KB, (tcsrtb k, SDL_Surface *s) {
-      SDL_FreeSurface(s);
-    });
-    //sameStrings=new typeof(sameStrings)((char[] c) { return c; }, (char[] c) { return c.length; }, 16*KB);
-  }
-  SDL_Surface *render(char[] text, SDL_Color fg, fontsettings s=Default, SDL_Color *bg=null) {
-    tcsrtb p; p.text=/*sameStrings.get(*/text/*)*/; p.col=fg; p.settings=s; p.bg=bg;
-    return surf_buffer.get(p);
-  }
-  SDL_Surface *_render(char[] text, SDL_Color fg, fontsettings s=Default, int rendermode=2, SDL_Color *bg=null) {
+  SDL_Surface *render(char[] text, SDL_Color fg, fontsettings s=Default, int rendermode=2, SDL_Color *bg=null) {
     //logln("Rendering ", text);
     /// Make sure no two routines change font settings at the same time
-    /*synchronized(this)*/ {
+    synchronized(this) {
       with (s) TTF_SetFontStyle(font, (bold?1:0)+(italic?2:0)+(underline?4:0));
       /// Text mode: 0=Latin1, 1=UTF8, 2=Unicode
       switch(rendermode) {
         case 0: // Solid
-          /*switch (textmode) {
-            case 0: */return TTF_RenderText_Solid(font, cast(char*)toPointer(text), fg);
-            /*case 1: return TTF_RenderUTF8_Solid(font, cast(char*)toPointer(text), fg);
-            case 2: return TTF_RenderUNICODE_Solid(font, cast(wchar*)toPointer(text), fg);
-            default: assert(false);
-          }*/
+          return TTF_RenderUTF8_Solid(font, toStringz(text), fg);
         case 1: // Shaded
-          /*switch (textmode) {
-            case 0: */return TTF_RenderText_Shaded(font, cast(char*)toPointer(text), fg, *bg);
-            /*case 1: return TTF_RenderUTF8_Shaded(font, cast(char*)toPointer(text), fg, *bg);
-            case 2: return TTF_RenderUNICODE_Shaded(font, cast(wchar*)toPointer(text), fg, *bg);
-            default: assert(false);
-          }*/
+          return TTF_RenderUTF8_Shaded(font, toStringz(text), fg, *bg);
         case 2: // Blended
-          /*switch (textmode) {
-            case 0: */return TTF_RenderText_Blended(font, cast(char*)toPointer(text), fg);
-            /*case 1: return TTF_RenderUTF8_Blended(font, cast(char*)toPointer(text), fg);
-            case 2: return TTF_RenderUNICODE_Blended(font, cast(wchar*)toPointer(text), fg);
-            default: assert(false);
-          }*/
+          return TTF_RenderUTF8_Blended(font, toStringz(text), fg);
         default: assert(false);
       }
     }
     assert(false);
   }
-  this(char[] filename, int ptsize) {
-    font=TTF_OpenFont(toPointer(filename), ptsize);
-    if (!font) throw new Exception("TTF_FontClass.this: Couldn't open font: "~toArray(SDL_GetError));
-    this();
+  this(void[] file, int ptsize) {
+    font=TTF_OpenFontRW(SDL_RWFromMem(file.ptr, file.length), 1, ptsize);
+    if (!font) throw new Exception("TTF_FontClass.this: Couldn't open font: "~.toString(SDL_GetError));
   }
-  ~this() { TTF_CloseFont(font); if (surf_buffer) delete surf_buffer; }
+  ~this() { TTF_CloseFont(font); }
 }
 
 extern(C) {
@@ -108,7 +55,7 @@ extern(C) {
     /// Just use SDL_GetError.
   // Management
     // Loading
-    TTF_Font *TTF_OpenFont(char *file, int ptsize);
+    TTF_Font *TTF_OpenFontRW(SDL_RWops *src, int freesrc, int ptsize);
     TTF_Font *TTF_OpenFontIndex(char *file, int ptsize, long index);
     // Freeing
     void TTF_CloseFont(TTF_Font *font);

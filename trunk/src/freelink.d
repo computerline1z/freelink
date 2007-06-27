@@ -6,20 +6,21 @@ void main ()
 {
   writefln (nl("freelink"));
   writefln ("Switching to German");
-  setLanguage ("German");
+  setLanguage ("German".dup);
   writefln (nl("freelink"));
   writefln ("Switching to default");
   setLanguage;
-  File f = new File (1, "Test.txt", 3, 0, false);
-  Computer x = new Computer (0, "Localhost");
+  File f = new File (1, "Test.txt".dup, 3, 0, false);
+  Computer x = new Computer (0, "Localhost".dup);
   writefln (x.name);
   writefln (f.name);
   writefln ("Available space: ", x.space.available);
 
-  Window testWindow = new Window ("Test");
+  Window testWindow = new Window ("Test".dup);
   auto fsrc=new FileSource(".."~sep~"gfx");
   auto stdframe=cast(xmlTag)parse(read(".."~sep~"gfx"~sep~"std-frame.xml")).children[0];
   auto frame=new Frame(fsrc, stdframe, new Frame(fsrc, stdframe, new Nothing));
+  frame.below=(new Font(read("comic.ttf"), 16)).new RenderText(nl("freelink"));
 
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
   SDL_Event event;
@@ -40,7 +41,6 @@ void main ()
       }
     }
     frame.draw(Area(screen));
-    //testWindow.draw(Area(screen));
     SDL_Flip(screen);
   }
 }

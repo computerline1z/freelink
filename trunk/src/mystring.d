@@ -3,7 +3,7 @@ static import std.string;
 
 /// YES INT GETS THE SPECIAL TREATMENT
 /// \todo: need to find out whose ass to kick over this
-int find(char[] string, char[] match) {
+int find(T, U)(T string, U match) {
   return cast(int) std.string.find(string, match);
 }
 
