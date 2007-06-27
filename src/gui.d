@@ -1,6 +1,8 @@
 module gui;
 import SDL, png, func, std.stdio, std.file, std.path: sep;
 
+T min(T, U)(T a, U b) { return a<b?a:cast(T)b; }
+
 class FileSource {
   string basepath;
   this(string path=".") { basepath=path; }
@@ -16,6 +18,7 @@ class Area {
   SDL_Rect me; SDL_Surface *mine;
   int w() { return me.w; } int h() { return me.h; }
   this(SDL_Rect r, SDL_Surface *s) { me=r; mine=s; }
+  static Area opCall(Area a) { with (a) return Area(mine, &me); }
   static Area opCall(SDL_Surface *s, SDL_Rect *r=null) {
     if (!r) {
       SDL_Rect full; with (full) { x=0; y=0; w=cast(ushort)s.w; h=cast(ushort)s.h; }
@@ -23,19 +26,28 @@ class Area {
     }
     return new Area(*r, s);
   }
-  int blit (SDL_Surface *surf, size_t x=0, size_t y=0, size_t w=0, size_t h=0) { /// blit surf on me at x, y
+  int blit (SDL_Surface *surf, size_t x=0, size_t y=0, size_t w=0, size_t h=0) {
+    return blit(Area(surf), x, y, w, h);
+  }
+  int blit (Area area, size_t x=0, size_t y=0, size_t w=0, size_t h=0) { /// blit area on me at x, y
     SDL_Rect dest = void;
-    if (!w) w=cast(ushort)surf.w; if (!h) h=cast(ushort)surf.h;
+    if (!w) w=min(cast(ushort)area.w, this.w); if (!h) h=min(cast(ushort)area.h, this.h);
     dest.x=cast(short)(x+me.x); dest.y=cast(short)(y+me.y);
     dest.w=cast(ushort)w; dest.h=cast(ushort)h;
     SDL_Rect src=dest;
-    src.x=0; src.y=0;
-    return SDL_BlitSurface (surf, &src, mine, &dest);
+    src.x=area.me.x; src.y=area.me.y;
+    return SDL_BlitSurface (area.mine, &src, mine, &dest);
   }
-  Area select(size_t x, size_t y, size_t w, size_t h) {
+  Area select(size_t x, size_t y, size_t w=invalid, size_t h=invalid) {
+    assert(x<this.w);
+    assert(y<this.h);
+    if (w==invalid) w=this.w-x; if (h==invalid) h=this.h-y;
+    assert(x+w<me.x+this.w);
+    assert(y+h<me.y+this.h);
     SDL_Rect nr=void; nr.x=cast(short)(x+me.x); nr.y=cast(short)(y+me.y); nr.w=cast(ushort)w; nr.h=cast(ushort)h;
     return new Area(nr, mine);
   }
+  const(char)[] toString() { return format("Area[", me.x, "-", me.y, " : ", me.w, "-", me.h, "]"); }
 }
 
 class Widget {
@@ -48,7 +60,7 @@ class ContainerWidget : Widget {
   Widget below () { return _below; }
 }
 
-alias SDL_Surface *delegate(size_t xs, size_t ys) Generator;
+interface Generator { SDL_Surface *opCall(size_t xs, size_t ys); }
 
 class Window : Widget {
   char[] title;
@@ -60,6 +72,15 @@ class Window : Widget {
 
   void draw (Area target) {
     target.blit(titleBar, 10, 10);
+  }
+}
+
+class Stack : Widget {
+  Widget[] widgets; int height;
+  this(int height, Widget[] widgets...) { this.height=height; this.widgets=widgets; }
+  void draw (Area target) {
+    assert(widgets.length*height<target.h);
+    foreach (i, w; widgets) w.draw(target.select(0, height*i));
   }
 }
 
@@ -78,15 +99,34 @@ class Button : Widget {
 
 import SDL_ttf;
 class Font {
-  class RenderText : Widget {
+  SDL_Surface*[wchar] buffer;
+  ~this() { foreach (surf; buffer) SDL_FreeSurface(surf); }
+  class Char : Widget {
+    wchar me;
+    this(wchar c) { me=c; if (!(me in buffer)) { buffer[me]=f.render(cast(char[])[me], white); } }
+    void draw(Area target) { target.blit(buffer[me]); }
+  }
+  class TextLine : Widget {
     char[] caption;
-    SDL_Surface *clickedImg, normalImg;
-    bool clicked;
-    SDL_Surface *surf;
-    this(char[] text) { surf=f.render(text, white); }
-    ~this() { SDL_FreeSurface(surf); }
+    Char[] charas;
+    bool correctOffs;
+    this(char[] text, bool offs=false) { foreach (wchar ch; text) charas~=new Char(ch); correctOffs=offs; }
     void draw (Area target) {
-      target.blit(surf);
+      auto sliding=Area(target);
+      foreach (id, ch; charas) {
+        ch.draw=sliding;
+        int offset=buffer[ch.me].w;
+        /// peekahead
+        if (id<charas.length-1) {
+          auto next=charas[id+1];
+          auto myOffs=f.getWidth([ch.me, next.me]);
+          myOffs-=buffer[next.me].w;
+          //if (offset!=myOffs) writefln("Offset we pick: ", offset, " Offset with correction: ", myOffs);
+          if (correctOffs) offset=myOffs;
+        }
+        try sliding=sliding.select(offset, 0);
+        catch (Exception e) break;
+      }
     }
   }
   TTF_FontClass f;
@@ -100,16 +140,7 @@ long eatoi(char[] nr, int max) {
   return atoi(nr);
 }
 
-RES delegate(size_t, size_t) myBind(RES, EXTRA...)(RES function(size_t, size_t, EXTRA) func, EXTRA e) {
-  struct estorage {
-    EXTRA e;
-    RES function(size_t, size_t, EXTRA) fn;
-    RES call(size_t w, size_t h) { return fn(w, h, e); }
-  }
-  auto res=new estorage;
-  foreach (idx, value; e) res.e[idx]=value; res.fn=func;
-  return &res.call;
-}
+template DefaultConstructor() { this(typeof(this.tupleof) t) { foreach (id, bogus; this.tupleof) this.tupleof[id]=cast(typeof(bogus))t[id]; } }
 
 import xml, util, std.string;
 class Frame : ContainerWidget {
@@ -144,10 +175,13 @@ class Frame : ContainerWidget {
     // ifIs(thingie, (xmlText txt) { // triggers gdc bug \todo: reenable on .24
     auto txt=cast(xmlText) thingie;
     if (txt) {
-      res=myBind(function(size_t xs, size_t ys, FileSource fs, char[] filename) {
-        assert((xs==invalid)&&(ys==invalid), format("Error: Tried to set image size: [", xs, ", ", ys, "]"));
-        return decode(fs.getFile(filename));
-      }, fsrc, txt.data);
+      res=new class(fsrc, txt.data) Generator {
+        FileSource fs; char[] filename; mixin DefaultConstructor;
+        SDL_Surface *opCall(size_t xs, size_t ys) {
+          assert((xs==invalid)&&(ys==invalid), format("Error: Tried to set image size: [", xs, ", ", ys, "]"));
+          return decode(fs.getFile(filename));
+        }
+      };
     }
     // ifIs(thingie, (xmlTag tag) { // triggers a gdc bug \todo: reenable on .24
     auto tag=cast(xmlTag) thingie;
@@ -157,37 +191,40 @@ class Frame : ContainerWidget {
         ///\todo: Fixed-shifting case!
         case "repeat":
           assert(tag.children.length==1);
-          res=myBind(function(size_t xs, size_t ys, Generator sup) {
-            // first acquire the surface above us
-            auto s=sup(invalid, invalid);
-            assert ((xs!=invalid)||(ys!=invalid), "Error: Repeater: width _and_ height invalid; repeater pointless.");
-            // X repetition first
-            if (xs != invalid) {
-              auto area=Area(MakeSurf(xs, s.h, 32)); // s repeated in x direction
-              // now fill new surface with duplicates of s
-              size_t offs=0;
-              while (xs-offs>s.w) { // while there's space for a full repetition
-                area.blit(s, offs, 0);
-                offs+=s.w;
+          res=new class(generate(tag.children[0])) Generator {
+            Generator sup; mixin DefaultConstructor;
+            SDL_Surface *opCall(size_t xs, size_t ys) {
+              // first acquire the surface above us
+              auto s=sup(invalid, invalid);
+              assert ((xs!=invalid)||(ys!=invalid), "Error: Repeater: width _and_ height invalid; repeater pointless.");
+              // X repetition first
+              if (xs != invalid) {
+                auto area=Area(MakeSurf(xs, s.h, 32)); // s repeated in x direction
+                // now fill new surface with duplicates of s
+                size_t offs=0;
+                while (xs-offs>s.w) { // while there's space for a full repetition
+                  area.blit(s, offs, 0);
+                  offs+=s.w;
+                }
+                // if there's still space left at all, fill it
+                if (xs-offs) area.blit(s, offs, 0, xs-offs, s.h);
+                SDL_FreeSurface(s); s=area.mine;
               }
-              // if there's still space left at all, fill it
-              if (xs-offs) area.blit(s, offs, 0, xs-offs, s.h);
-              SDL_FreeSurface(s); s=area.mine;
-            }
-            // Now Y repetition .. basically the same again
-            if (ys != invalid) {
-              auto area=Area(MakeSurf(s.w, ys, 32));
-              size_t offs=0;
-              while (ys-offs>s.h) { // while there's space for a full repetition
-                area.blit(s, 0, offs);
-                offs+=s.h;
+              // Now Y repetition .. basically the same again
+              if (ys != invalid) {
+                auto area=Area(MakeSurf(s.w, ys, 32));
+                size_t offs=0;
+                while (ys-offs>s.h) { // while there's space for a full repetition
+                  area.blit(s, 0, offs);
+                  offs+=s.h;
+                }
+                // if there's still space left at all, fill it
+                if (ys-offs) area.blit(s, 0, offs, s.w, ys-offs);
+                SDL_FreeSurface(s); s=area.mine;
               }
-              // if there's still space left at all, fill it
-              if (ys-offs) area.blit(s, 0, offs, s.w, ys-offs);
-              SDL_FreeSurface(s); s=area.mine;
+              return s;
             }
-            return s;
-          }, generate(tag.children[0]));
+          };
           break;
         case "part":
           assert("from" in tag.attributes, "Error: part without from");
@@ -198,51 +235,55 @@ class Frame : ContainerWidget {
           char[][] r_str=map(split(tag.attributes["from"], ",")~split(tag.attributes["to"], ","), member!(string, "dup"));
           foreach (inout text; r_str) text=strip(text).dup;
           assert(r_str.length==4);
-          res=myBind(function(size_t xs, size_t ys, Generator sup, char[][] str) {
-            assert((xs==invalid)&&(ys==invalid), format("Error: Tried to set image size of part: [", xs, ", ", ys, "]"));
-            SDL_Surface *s=sup(xs, ys); scope(exit) SDL_FreeSurface(s);
-            writefln("Sup: ", s.w, "-", s.h);
-            SDL_Surface *res=void;
-            try {
+          res=new class(generate(tag.children[0]), r_str) Generator {
+            Generator sup; char[][] str; mixin DefaultConstructor;
+            SDL_Surface *opCall(size_t xs, size_t ys) {
+              assert((xs==invalid)&&(ys==invalid), format("Error: Tried to set image size of part: [", xs, ", ", ys, "]"));
+              SDL_Surface *s=sup(xs, ys); scope(exit) SDL_FreeSurface(s);
+              SDL_Surface *res=void;
               with (*s) res=MakeSurf(eatoi(str[2], w)-eatoi(str[0], w), eatoi(str[3], h)-eatoi(str[1], h), 32);
-            } catch (Exception e) { writefln("Exception ", e); throw e; }
-            SDL_Rect source=void;
-            with (source) {
-              x=cast(short)eatoi(str[0], s.w); y=cast(short)eatoi(str[1], s.h);
-              w=cast(ushort)res.w; h=cast(ushort)res.h;
+              SDL_Rect source=void;
+              with (source) {
+                x=cast(short)eatoi(str[0], s.w); y=cast(short)eatoi(str[1], s.h);
+                w=cast(ushort)res.w; h=cast(ushort)res.h;
+              }
+              SDL_Rect dest=void; with (dest) x=y=0;
+              SDL_BlitSurface(s, &source, res, &dest);
+              return res;
             }
-            SDL_Rect dest=void; with (dest) x=y=0;
-            SDL_BlitSurface(s, &source, res, &dest);
-            return res;
-          }, generate(tag.children[0]), r_str);
+          };
           break;
         case "rotate":
           assert("mode" in tag.attributes, "Error: rotate without mode");
           assert(tag.children.length==1, "Error: No surface below "~tag.toString);
           auto mode=tag.attributes["mode"];
-          res=myBind(function(size_t xs, size_t ys, char[] mode, Generator sup) {
-            SDL_Surface *ret=void;
-            SDL_Surface *s; scope(exit) if (s) SDL_FreeSurface(s);
-            switch (mode) {
-              case "right":
-                s=sup(ys, xs);
-                with (*s) ret=MakeSurf(h, w, 32);
-                for (int x=0; x<ret.w; ++x) for (int y=0; y<ret.h; ++y) putpixel(ret, x, y, getpixel(s, y, s.h-1-x));
-                break;
-              case "left":
-                s=sup(ys, xs);
-                with (*s) ret=MakeSurf(h, w, 32);
-                for (int x=0; x<ret.w; ++x) for (int y=0; y<ret.h; ++y) putpixel(ret, x, y, getpixel(s, s.w-1-y, x));
-                break;
-              case "180":
-                s=sup(xs, ys);
-                with (*s) ret=MakeSurf(w, h, 32);
-                for (int x=0; x<ret.w; ++x) for (int y=0; y<ret.h; ++y) putpixel(ret, x, y, getpixel(s, s.w-1-x, s.h-1-y));
-                break;
-              default: assert(false, "Unknown rotation mode: "~mode);
+          //res=myBind(function(size_t xs, size_t ys, char[] mode, Generator sup) {
+          res=new class(mode, generate(tag.children[0])) Generator {
+            char[] mode; Generator sup; mixin DefaultConstructor;
+            SDL_Surface *opCall(size_t xs, size_t ys) {
+              SDL_Surface *ret=void;
+              SDL_Surface *s; scope(exit) if (s) SDL_FreeSurface(s);
+              switch (mode) {
+                case "right":
+                  s=sup(ys, xs);
+                  with (*s) ret=MakeSurf(h, w, 32);
+                  for (int x=0; x<ret.w; ++x) for (int y=0; y<ret.h; ++y) putpixel(ret, x, y, getpixel(s, y, s.h-1-x));
+                  break;
+                case "left":
+                  s=sup(ys, xs);
+                  with (*s) ret=MakeSurf(h, w, 32);
+                  for (int x=0; x<ret.w; ++x) for (int y=0; y<ret.h; ++y) putpixel(ret, x, y, getpixel(s, s.w-1-y, x));
+                  break;
+                case "180":
+                  s=sup(xs, ys);
+                  with (*s) ret=MakeSurf(w, h, 32);
+                  for (int x=0; x<ret.w; ++x) for (int y=0; y<ret.h; ++y) putpixel(ret, x, y, getpixel(s, s.w-1-x, s.h-1-y));
+                  break;
+                default: assert(false, "Unknown rotation mode: "~mode);
+              }
+              return ret;
             }
-            return ret;
-          }, mode, generate(tag.children[0]));
+          };
           break;
         default: assert(false, "Unknown mode: "~tag.name);
       }
@@ -268,9 +309,7 @@ class Frame : ContainerWidget {
   }
   void draw(Area target) {
     // draw the frame
-    writefln("Frame");
     target.blit(getSurf("top-left"), 0, 0);
-    writefln("/Frame");
     target.blit(getSurf("top-right"), target.w-getSurf("top-right").w, 0);
     target.blit(getSurf("bottom-left"), 0, target.h-getSurf("bottom-left").h);
     target.blit(getSurf("bottom-right"), target.w-getSurf("bottom-right").w, target.h-getSurf("bottom-right").h);
@@ -288,7 +327,6 @@ class Frame : ContainerWidget {
     // draw below
     assert(below !is null);
     auto tlw=getSurf("top-left").w; auto tlh=getSurf("top-left").h;
-    writefln("Now as for below .. ");
     below.draw(target.select(tlw, tlh, target.w-tlw-getSurf("bottom-right").w, target.h-tlh-getSurf("bottom-right").h));
   }
 }

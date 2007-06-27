@@ -17,12 +17,12 @@ unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
   else return res;
 }
 
-SDL_Surface *MakeSurf(X, Y, B)(X width, Y height, B bpp) {
-  writefln("Create Surface: ", width, "/", height);
+SDL_Surface *MakeSurf(size_t width, size_t height, size_t bpp) {
+  writefln("Create Surface: ", width, "/", height, "-", bpp);
   assert(width!=size_t.max); assert(height!=size_t.max);
-  scope(exit) writefln("/Create");
   assert(width>0); assert(height>0);
-  return SDL_CreateRGBSurface(SDL_SWSURFACE, cast(ushort)width, cast(ushort)height, bpp, 0, 0, 0, 0);
+  auto res=SDL_CreateRGBSurface(SDL_SWSURFACE, cast(ushort)width, cast(ushort)height, bpp, 0, 0, 0, 0);
+  return res;
 }
 
 void putpixel(X, Y)(SDL_Surface *surf, X x, Y y, ubyte[] data) {
