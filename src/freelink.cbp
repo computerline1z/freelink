@@ -4,41 +4,41 @@
 	<Project>
 		<Option title="freelink" />
 		<Option pch_mode="2" />
-		<Option compiler="gdc" />
+		<Option compiler="dmd" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/freelink" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/Debug/" />
+				<Option output="bin\Debug\freelink.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Debug\" />
 				<Option type="1" />
-				<Option compiler="gdc" />
+				<Option compiler="dmd" />
+				<Option use_console_runner="0" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
+				<Linker>
+					<Add option="-g" />
+				</Linker>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/Release/freelink" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/Release/" />
+				<Option output="bin\Release\freelink.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Release\" />
 				<Option type="1" />
-				<Option compiler="gdc" />
-				<Compiler>
-					<Add option="-O2" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
+				<Option compiler="dmd" />
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-Wall" />
 			<Add directory="contrib" />
 		</Compiler>
 		<Linker>
+			<Add library="SDL_ttf" />
 			<Add library="SDL" />
+			<Add library="freetype" />
 		</Linker>
 		<Unit filename="computer.d" />
 		<Unit filename="connection.d" />
-		<Unit filename="contrib/SDL.d" />
-		<Unit filename="contrib/libgd.d" />
+		<Unit filename="contrib\SDL.d" />
+		<Unit filename="contrib\SDL_ttf.d" />
+		<Unit filename="contrib\libgd.d" />
 		<Unit filename="file.d" />
 		<Unit filename="freelink.cbp" />
 		<Unit filename="freelink.d" />
@@ -53,6 +53,7 @@
 		<Unit filename="xml.d" />
 		<Extensions>
 			<code_completion />
+			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

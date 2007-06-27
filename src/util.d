@@ -12,7 +12,7 @@ template staticToString(int foo) {
   else const char[] staticToString=staticToString!(foo/10)~"0123456789"[foo%10];
 }
 
-template const_enum(T, char[] csv, char[] got="", int offset=0) {
+template const_enum(T, string csv, string got="", int offset=0) {
   static if (!csv.length) const char[] const_enum="const "~T.stringof~" "~got~" = "~staticToString!(offset)~";";
   else static if (csv[0]==',') {
     const char[] const_enum="const "~T.stringof~" "~got~" = "~staticToString!(offset)~";" ~
