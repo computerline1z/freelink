@@ -9,6 +9,7 @@ struct fontsettings {
 
 import std.string: toStringz, toString;
 
+import std.stdio;
 class TTF_FontClass {
   static this() { if (!TTF_WasInit) TTF_Init; }
   static ~this() { if (TTF_WasInit) TTF_Quit; }
@@ -18,6 +19,10 @@ class TTF_FontClass {
   int descent() { return TTF_FontDescent(font); }
   int lineskip() { return TTF_FontLineSkip(font); }
   static fontsettings Default;
+  int getWidth(char[] text) {
+    int w, h; TTF_SizeUTF8(font, toStringz(text), &w, &h);
+    return w;
+  }
 
   SDL_Surface *render(char[] text, SDL_Color fg, fontsettings s=Default, int rendermode=2, SDL_Color *bg=null) {
     //logln("Rendering ", text);

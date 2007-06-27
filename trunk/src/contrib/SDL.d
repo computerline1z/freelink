@@ -405,6 +405,7 @@ uint SDL_MapRGB(SDL_PixelFormat *format, ubyte r, ubyte g, ubyte b);
 void SDL_GetRGB(uint pixel, SDL_PixelFormat *fmt, ubyte *r, ubyte *g, ubyte *b);
 uint SDL_MapRGBA(SDL_PixelFormat *format, ubyte r, ubyte g, ubyte b, ubyte a);
 void SDL_GetRGBA(uint pixel, SDL_PixelFormat *fmt, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
+int SDL_SetAlpha(SDL_Surface *, uint flag, ubyte alpha);
 
 const ubyte SDL_APPMOUSEFOCUS=0x01;
 const ubyte SDL_APPINPUTFOCUS=0x02;
