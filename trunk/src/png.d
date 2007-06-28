@@ -9,7 +9,7 @@ template unstatic(T) {
   else alias T unstatic;
 }
 
-unstatic!(T) chip(T, bool reverse=false)(inout ubyte[] data) {
+unstatic!(T) chip(T, bool reverse=false)(ref ubyte[] data) {
   static if (reverse) (data.ptr)[0..T.sizeof].reverse;
   T res=*(cast(T*)data.ptr);
   data=data[T.sizeof..$];
@@ -108,26 +108,26 @@ SDL_Surface *decode(void[] _data) {
     switch (filter) {
       case 0: break;
       /// sub: add previous pixel
-      case 1: foreach (i, inout entry; scanline) {
+      case 1: foreach (i, ref entry; scanline) {
         ubyte left=0; if (i!<bpp) left=scanline[i-bpp];
         entry=limit(entry+left);
       }
       break;
       /// up: add previous line
-      case 2: foreach (i, inout entry; scanline) {
+      case 2: foreach (i, ref entry; scanline) {
         ubyte up=0; if (lines.length) up=lines[y-1][i];
         entry=limit(entry+up);
       }
       break;
       /// average: (sub+up)/2
-      case 3: foreach (i, inout entry; scanline) {
+      case 3: foreach (i, ref entry; scanline) {
         ubyte left=0; if (i!<bpp) left=scanline[i-bpp];
         ubyte up=0; if (lines.length) up=lines[y-1][i];
         entry=limit(entry+(left+up)/2);
       }
       break;
       /// paeth
-      case 4: foreach (i, inout entry; scanline) {
+      case 4: foreach (i, ref entry; scanline) {
         ubyte left=0;
         if (i!<bpp) left=scanline[i-bpp];
         ubyte up=0; ubyte upleft=0;
@@ -144,7 +144,7 @@ SDL_Surface *decode(void[] _data) {
   }
   assert(!decomp.length, "Decompression failed: data left over");
   auto result=MakeSurf(width, height, bpp*8);
-  foreach (y, inout line; lines) {
+  foreach (y, ref line; lines) {
     if (depth==8) {
       if (color==2)
         for (int x=0; x<width; ++x) putpixel(result, x, y, chip!(ubyte[3])(line));
