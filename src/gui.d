@@ -47,7 +47,7 @@ class Area {
     SDL_Rect nr=void; nr.x=cast(short)(x+me.x); nr.y=cast(short)(y+me.y); nr.w=cast(ushort)w; nr.h=cast(ushort)h;
     return new Area(nr, mine);
   }
-  const(char)[] toString() { return format("Area[", me.x, "-", me.y, " : ", me.w, "-", me.h, "]"); }
+  char[] toString() { return format("Area[", me.x, "-", me.y, " : ", me.w, "-", me.h, "]"); }
 }
 
 class Widget {
@@ -97,6 +97,24 @@ class Button : Widget {
   }
 }
 
+struct _range_foreach {
+  int start; int end;
+  int opApply(int delegate(ref int) dg) {
+    int result=0; for (int c=start; c<end; ++c) {
+      result=dg(c); if (result) break;
+    }
+    return result;
+  }
+}
+
+struct _Integers {
+  _range_foreach opSlice(size_t from, size_t to) {
+    _range_foreach res; res.start=from; res.end=to;
+    return res;
+  }
+}
+_Integers Integers;
+
 import SDL_ttf;
 class Font {
   SDL_Surface*[wchar] buffer;
@@ -127,6 +145,18 @@ class Font {
         try sliding=sliding.select(offset, 0);
         catch (Exception e) break;
       }
+    }
+  }
+  class GridTextField : Widget {
+    /// returns whether to re-call it. Writes self into target.
+    bool delegate(ref wchar[] target, ref bool newline)[] lines;
+    int glyph_w, glyph_h; this(int w, int h) { glyph_w=w; glyph_h=h; }
+    void draw(Area target) {
+      int xchars=target.w/glyph_w;
+      int ychars=target.h/glyph_h;
+      wchar[][] screen_area; // [line] [column]
+      foreach (i; Integers[0..ychars]) screen_area~=new wchar[xchars];
+      /// TODO: actually render stuff here.
     }
   }
   TTF_FontClass f;
@@ -168,13 +198,10 @@ class Frame : ContainerWidget {
     }
     return buffer[name].buf;
   }
-  //ubyte[] modes; invariant { assert(modes.length==4); }
   /// generate a SDL surface from an XML description
   private Generator generate(xmlElement thingie) {
     Generator res=null;
-    // ifIs(thingie, (xmlText txt) { // triggers gdc bug \todo: reenable on .24
-    auto txt=cast(xmlText) thingie;
-    if (txt) {
+    ifIs(thingie, (xmlText txt) { // triggers gdc bug \todo: reenable on .24
       res=new class(fsrc, txt.data) Generator {
         FileSource fs; char[] filename; mixin DefaultConstructor;
         SDL_Surface *opCall(size_t xs, size_t ys) {
@@ -182,10 +209,8 @@ class Frame : ContainerWidget {
           return decode(fs.getFile(filename));
         }
       };
-    }
-    // ifIs(thingie, (xmlTag tag) { // triggers a gdc bug \todo: reenable on .24
-    auto tag=cast(xmlTag) thingie;
-    if (tag) {
+    });
+    ifIs(thingie, (xmlTag tag) { // triggers a gdc bug \todo: reenable on .24
       assert(tag.children.length==1, "Invalid children length in "~tag.toString);
       switch (tag.name) {
         ///\todo: Fixed-shifting case!
@@ -233,7 +258,7 @@ class Frame : ContainerWidget {
           auto supergen=generate(tag.children[0]);
           // rectangle strings
           char[][] r_str=map(split(tag.attributes["from"], ",")~split(tag.attributes["to"], ","), member!(string, "dup"));
-          foreach (inout text; r_str) text=strip(text).dup;
+          foreach (ref text; r_str) text=strip(text).dup;
           assert(r_str.length==4);
           res=new class(generate(tag.children[0]), r_str) Generator {
             Generator sup; char[][] str; mixin DefaultConstructor;
@@ -287,7 +312,7 @@ class Frame : ContainerWidget {
           break;
         default: assert(false, "Unknown mode: "~tag.name);
       }
-    }
+    });
     assert(res); return res;
   }
   /// constructor
@@ -300,6 +325,7 @@ class Frame : ContainerWidget {
     foreach (_ch; frame.children) {
       ifIs(_ch, (xmlTag ch) {
         assert(ch.children.length==1, "Invalid number of children in "~ch.toString);
+        assert(!(ch.name in entries));
         entries[ch.name]=ch.children[0];
         if ("mode" in ch.attributes) modestr[ch.name]=ch.attributes["mode"];
       });

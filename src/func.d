@@ -47,7 +47,7 @@ template ReturnType(C, string M) {
 
 template member(CLASS, string METHOD) { const member=function(CLASS cl) { mixin("return cl."~METHOD~"; "); }; }
 
-template sum(T) { const sum=function(inout T a, T b) { a+=b; }; }
+template sum(T) { const sum=function(ref T a, T b) { a+=b; }; }
 
-T fold(T)(T[] array, void delegate(inout T to, T from) dg) { assert(array.length); foreach (elem; array[1..$]) dg(array[0], elem); return array[0]; }
-T fold(T, Bogus=void)(T[] array, void function(inout T to, T from) fn) { return fold(array, (inout T to, T from) { fn(to, from); }); }
+T fold(T)(T[] array, void delegate(ref T to, T from) dg) { assert(array.length); foreach (elem; array[1..$]) dg(array[0], elem); return array[0]; }
+T fold(T, Bogus=void)(T[] array, void function(ref T to, T from) fn) { return fold(array, (ref T to, T from) { fn(to, from); }); }

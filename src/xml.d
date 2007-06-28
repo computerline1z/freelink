@@ -5,7 +5,8 @@ import util, func, mystring;
 interface xmlElement { char[] toString(); };
 
 class xmlText : xmlElement {
-  char[] data;
+  final char[] data;
+  this(char[] whut) { data=whut; }
   char[] toString() { return "\""~data~"\""; }
 }
 
@@ -28,8 +29,8 @@ xmlTag parse(char[] xml) {
   /// generate a flat list first
   xmlElement[] list;
   void addText(char[] c) {
-    void addInstead() { auto nt=new xmlText; nt.data~=c; list~=nt; }
-    if (list.length) ifIs(list[$-1], (xmlText t) { t.data~=c; },/*else*/ &addInstead); else addInstead;
+    void addInstead() { list~=new xmlText(c); }
+    if (list.length) ifIs(list[$-1], (xmlText t) { list[$-1]=new xmlText(t.data~c); },/*else*/ &addInstead); else addInstead;
   }
   size_t nextTag=xml.find("<");
   while (nextTag!=-1) {
@@ -69,7 +70,7 @@ xmlTag parse(char[] xml) {
     xml=xml[endTag+1..$];
     nextTag=xml.find("<");
   }
-  auto rest=new xmlText; rest.data=xml; list~=rest;
+  list~=new xmlText(xml);
   /// filter practically empty tags
   list=filter(list, (xmlElement e) { bool keep=true; ifIs(e, (xmlText tx) {
     if (!tx.data.length) keep=false;
@@ -82,7 +83,7 @@ xmlTag parse(char[] xml) {
   /// while there's still unprocessed tags in the list
   /// take them, and search for the respective ending tag
   /// when found, recurse
-  void treeify(inout xmlElement[] array) {
+  void treeify(ref xmlElement[] array) {
     size_t pos=0;
     while (pos<array.length) {
       ifIs(array[pos], (xmlTag tag) {
