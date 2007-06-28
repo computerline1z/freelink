@@ -76,11 +76,14 @@ class Window : Widget {
 }
 
 class Stack : Widget {
-  Widget[] widgets; int height;
-  this(int height, Widget[] widgets...) { this.height=height; this.widgets=widgets; }
+  Widget[] widgets; int height; bool fillRest;
+  this(int height, bool fillRest, Widget[] widgets...) { this.height=height; this.widgets=widgets; this.fillRest=fillRest; }
   void draw (Area target) {
     assert(widgets.length*height<target.h);
-    foreach (i, w; widgets) w.draw(target.select(0, height*i));
+    if (fillRest) {
+      foreach (i, w; widgets[0..$-1]) w.draw(target.select(0, height*i, target.w, height));
+      widgets[$-1].draw(target.select(0, (widgets.length-1)*height));
+    } else foreach (i, w; widgets) w.draw(target.select(0, height*i, target.w, height));
   }
 }
 
@@ -122,7 +125,7 @@ class Font {
   class Char : Widget {
     wchar me;
     this(wchar c) { me=c; if (!(me in buffer)) { buffer[me]=f.render(cast(char[])[me], white); } }
-    void draw(Area target) { target.blit(buffer[me]); }
+    void draw(Area target) { if (me!=wchar.init) target.blit(buffer[me]); }
   }
   class TextLine : Widget {
     char[] caption;
@@ -149,14 +152,43 @@ class Font {
   }
   class GridTextField : Widget {
     /// returns whether to re-call it. Writes self into target.
+    /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
     bool delegate(ref wchar[] target, ref bool newline)[] lines;
     int glyph_w, glyph_h; this(int w, int h) { glyph_w=w; glyph_h=h; }
     void draw(Area target) {
       int xchars=target.w/glyph_w;
       int ychars=target.h/glyph_h;
+      //writefln("Rendering grid: [", xchars, ", ", ychars, "]");
       wchar[][] screen_area; // [line] [column]
+      /// the last line each delegate has rendered.
+      int[typeof(lines[0])] lastlines;
       foreach (i; Integers[0..ychars]) screen_area~=new wchar[xchars];
       /// TODO: actually render stuff here.
+      size_t current=0; size_t absolute_current=0;
+      foreach (line; lines) {
+        bool newline=false;
+        bool recall=false;
+        do {
+          recall=line(screen_area[current], newline); /// render line into buffer
+          assert (screen_area[current].length==xchars, "Error: delegate modified line width");
+          lastlines[line]=absolute_current;
+          if (newline) { ++current; ++absolute_current; }
+          /// while the cursor is below the screen ...
+          while (current>=screen_area.length) {
+            screen_area=screen_area[1..$]~new wchar[xchars]; /// append one line at end, shift up.
+            --current;
+          }
+        } while (recall);
+      }
+      /// if the line value is negative, it means the last line for that delegate is off the screen
+      /// meaning we can safely delete the delegate.
+      foreach (inout line; lastlines) line+=ychars-absolute_current;
+      /// which we now do.
+      while (lastlines[lines[0]]<0) lines=lines[1..$];
+
+      /// Now render.
+      foreach (y, line; screen_area) foreach (x, ch; line)
+        (new Char(ch)).draw(target.select(x*glyph_w, y*glyph_h, glyph_w, glyph_h));
     }
   }
   TTF_FontClass f;

@@ -40,7 +40,6 @@
 		<Unit filename="contrib\SDL_ttf.d" />
 		<Unit filename="contrib\libgd.d" />
 		<Unit filename="file.d" />
-		<Unit filename="freelink.cbp" />
 		<Unit filename="freelink.d" />
 		<Unit filename="func.d" />
 		<Unit filename="gui.d" />

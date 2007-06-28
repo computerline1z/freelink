@@ -18,7 +18,7 @@ unstatic!(T) chip(T, bool reverse=false)(ref ubyte[] data) {
 }
 
 SDL_Surface *MakeSurf(size_t width, size_t height, size_t bpp) {
-  writefln("Create Surface: ", width, "/", height, "-", bpp);
+  //writefln("Create Surface: ", width, "/", height, "-", bpp);
   assert(width!=size_t.max); assert(height!=size_t.max);
   assert(width>0); assert(height>0);
   auto res=SDL_CreateRGBSurface(SDL_SWSURFACE, cast(ushort)width, cast(ushort)height, bpp, 0, 0, 0, 0);
@@ -73,7 +73,7 @@ SDL_Surface *decode(void[] _data) {
         assert(!filterm, "Unsupported filter method: "~.toString(filterm));
         auto interlace=chip!(ubyte)(chunk);
         assert(!interlace, "Interlacing not yet supported");
-        writefln("Width: ", width, " Height: ", height, " Depth: ", depth);
+        //writefln("Width: ", width, " Height: ", height, " Depth: ", depth);
       break;
       default:
         /*writefln("Chunk type ", type, ": ",
