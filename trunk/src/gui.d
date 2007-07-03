@@ -14,9 +14,10 @@ class FileSource {
 
 const invalid=size_t.max;
 
-class Area {
+final class Area {
   SDL_Rect me; SDL_Surface *mine;
   int w() { return me.w; } int h() { return me.h; }
+  int x() { return me.x; } int y() { return me.y; }
   this(SDL_Rect r, SDL_Surface *s) { me=r; mine=s; }
   static Area opCall(Area a) { with (a) return Area(mine, &me); }
   static Area opCall(SDL_Surface *s, SDL_Rect *r=null) {
@@ -29,6 +30,7 @@ class Area {
   int blit (SDL_Surface *surf, size_t x=0, size_t y=0, size_t w=0, size_t h=0) {
     return blit(Area(surf), x, y, w, h);
   }
+  void clean() { SDL_FillRect(mine, &me, 0); }
   int blit (Area area, size_t x=0, size_t y=0, size_t w=0, size_t h=0) { /// blit area on me at x, y
     SDL_Rect dest = void;
     if (!w) w=min(cast(ushort)area.w, this.w); if (!h) h=min(cast(ushort)area.h, this.h);
@@ -47,47 +49,75 @@ class Area {
     SDL_Rect nr=void; nr.x=cast(short)(x+me.x); nr.y=cast(short)(y+me.y); nr.w=cast(ushort)w; nr.h=cast(ushort)h;
     return new Area(nr, mine);
   }
+  bool sameSize(Area foo) { return (foo.w==w)&&(foo.h==h); }
+  bool sameRect(Area foo) { return sameSize(foo)&&(foo.x==x)&&(foo.y==y); }
+  bool sameSurf(Area foo) { return mine == foo.mine; }
+  bool overlaps(Area foo) { return !((foo.x>x+w)||(foo.x+foo.w<x)||(foo.y>y+h)||(foo.y+foo.h<y)); }
   char[] toString() { return format("Area[", me.x, "-", me.y, " : ", me.w, "-", me.h, "]"); }
 }
 
 class Widget {
-  abstract void draw (Area);
+  bool tainted=false; void taint() { tainted=true; }
+  //final void taintcheck(void delegate() dg) { if (tainted) { dg(); tainted=false; } }
+  abstract void draw ();
+  /// check if redraws are necessary
+  abstract void update ();
+  /// Where we live.
+  private Area area=null;
+  /// force setRegion to treat area as pristine
+  void fullRedraw() { assert(area !is null, "Can't fullRedraw while area not set"); auto backup=area; area=null; setRegion(backup); }
+  /// used to position/move the drawing region. Might trigger a re-draw.
+  void setRegion(Area region) {
+    assert(region.mine);
+    if (area&&region.sameSurf(area)&&region.sameSize(area)) {
+      if (!region.sameRect(area)) {
+        if (!region.overlaps(area)) {
+          region.blit(area);
+          area=region;
+        } else { area=region; draw; }
+      }
+    } else { area=region; draw; }
+  }
 }
 
 class ContainerWidget : Widget {
+  abstract void setRegion(Area region);
+}
+
+class FrameWidget : ContainerWidget {
   private Widget _below;
   void below (Widget w) { _below=w; }
   Widget below () { return _below; }
+  void update() { below.update; }
 }
 
 interface Generator { SDL_Surface *opCall(size_t xs, size_t ys); }
 
-class Window : Widget {
+/*class Window : Widget {
   char[] title;
   SDL_Surface *titleBar, left, right, corner, bottom; // We can flip/copy corners right?
   this (char[] title) {
     this.title = title;
     titleBar = decode (read("../gfx/titlebar.png"));
   }
+  void draw (Area target) { target.blit(titleBar, 10, 10); }
+}*/
 
-  void draw (Area target) {
-    target.blit(titleBar, 10, 10);
-  }
-}
-
-class Stack : Widget {
+class Stack : ContainerWidget {
   Widget[] widgets; int height; bool fillRest;
   this(int height, bool fillRest, Widget[] widgets...) { this.height=height; this.widgets=widgets; this.fillRest=fillRest; }
-  void draw (Area target) {
+  void update() { foreach (w; widgets) w.update; }
+  void setRegion(Area target) {
     assert(widgets.length*height<target.h);
     if (fillRest) {
-      foreach (i, w; widgets[0..$-1]) w.draw(target.select(0, height*i, target.w, height));
-      widgets[$-1].draw(target.select(0, (widgets.length-1)*height));
-    } else foreach (i, w; widgets) w.draw(target.select(0, height*i, target.w, height));
+      foreach (i, w; widgets[0..$-1]) w.setRegion(target.select(0, height*i, target.w, height));
+      widgets[$-1].setRegion(target.select(0, (widgets.length-1)*height));
+    } else foreach (i, w; widgets) w.setRegion(target.select(0, height*i, target.w, height));
   }
+  void draw () { foreach (w; widgets) w.draw; }
 }
 
-class Button : Widget {
+/*class Button : Widget {
   char[] caption;
   SDL_Surface *clickedImg, normalImg;
   bool clicked;
@@ -98,84 +128,44 @@ class Button : Widget {
       target.blit (normalImg, 10, 10);
     }
   }
-}
-
-struct _range_foreach {
-  int start; int end;
-  int opApply(int delegate(ref int) dg) {
-    int result=0; for (int c=start; c<end; ++c) {
-      result=dg(c); if (result) break;
-    }
-    return result;
-  }
-}
-
-struct _Integers {
-  _range_foreach opSlice(size_t from, size_t to) {
-    _range_foreach res; res.start=from; res.end=to;
-    return res;
-  }
-}
-_Integers Integers;
+}*/
 
 import SDL_ttf;
 class Font {
   SDL_Surface*[wchar] buffer;
   ~this() { foreach (surf; buffer) SDL_FreeSurface(surf); }
-  class Char : Widget {
-    wchar me;
-    this(wchar c) { me=c; if (!(me in buffer)) { buffer[me]=f.render(cast(char[])[me], white); } }
-    void draw(Area target) { if (me!=wchar.init) target.blit(buffer[me]); }
-  }
-  class TextLine : Widget {
-    char[] caption;
-    Char[] charas;
-    bool correctOffs;
-    this(char[] text, bool offs=false) { foreach (wchar ch; text) charas~=new Char(ch); correctOffs=offs; }
-    void draw (Area target) {
-      auto sliding=Area(target);
-      foreach (id, ch; charas) {
-        ch.draw=sliding;
-        int offset=buffer[ch.me].w;
-        /// peekahead
-        if (id<charas.length-1) {
-          auto next=charas[id+1];
-          auto myOffs=f.getWidth([ch.me, next.me]);
-          myOffs-=buffer[next.me].w;
-          //if (offset!=myOffs) writefln("Offset we pick: ", offset, " Offset with correction: ", myOffs);
-          if (correctOffs) offset=myOffs;
-        }
-        try sliding=sliding.select(offset, 0);
-        catch (Exception e) break;
-      }
-    }
+  SDL_Surface *getChar(wchar ch) {
+    if (!(ch in buffer)) buffer[ch]=f.render(cast(char[])[ch], white);
+    return buffer[ch];
   }
   class GridTextField : Widget {
     /// returns whether to re-call it. Writes self into target.
     /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
     bool delegate(ref wchar[] target, ref bool newline)[] lines;
     int glyph_w, glyph_h; this(int w, int h) { glyph_w=w; glyph_h=h; }
-    void draw(Area target) {
-      int xchars=target.w/glyph_w;
-      int ychars=target.h/glyph_h;
-      //writefln("Rendering grid: [", xchars, ", ", ychars, "]");
-      wchar[][] screen_area; // [line] [column]
+    wchar[][] screen_area; /// [line] [column]
+    void setRegion(Area target) {
+      size_t xsize=target.w/glyph_w;
+      screen_area=new wchar[][target.h/glyph_h]; foreach (inout line; screen_area) line=new wchar[xsize];
+      super.setRegion(target);
+    }
+    private wchar[][] eval(size_t xchars, size_t ychars) {
       /// the last line each delegate has rendered.
       int[typeof(lines[0])] lastlines;
-      foreach (i; Integers[0..ychars]) screen_area~=new wchar[xchars];
-      /// TODO: actually render stuff here.
+      /// [line] [column]
+      auto res=new wchar[][ychars]; foreach (inout line; res) line.length=xchars;
       size_t current=0; size_t absolute_current=0;
       foreach (line; lines) {
         bool newline=false;
         bool recall=false;
         do {
-          recall=line(screen_area[current], newline); /// render line into buffer
-          assert (screen_area[current].length==xchars, "Error: delegate modified line width");
+          recall=line(res[current], newline); /// render line into buffer
+          assert (res[current].length==xchars, "Error: delegate modified line width");
           lastlines[line]=absolute_current;
           if (newline) { ++current; ++absolute_current; }
           /// while the cursor is below the screen ...
-          while (current>=screen_area.length) {
-            screen_area=screen_area[1..$]~new wchar[xchars]; /// append one line at end, shift up.
+          while (current>=res.length) {
+            res=res[1..$]~new wchar[xchars]; /// append one line at end, shift up.
             --current;
           }
         } while (recall);
@@ -185,27 +175,35 @@ class Font {
       foreach (inout line; lastlines) line+=ychars-absolute_current;
       /// which we now do.
       while (lastlines[lines[0]]<0) lines=lines[1..$];
-
-      /// Now render.
-      foreach (y, line; screen_area) foreach (x, ch; line)
-        (new Char(ch)).draw(target.select(x*glyph_w, y*glyph_h, glyph_w, glyph_h));
+      return res;
     }
+    void update() {
+      auto newScreen=eval(screen_area[0].length, screen_area.length);
+      foreach (line_nr, line; newScreen)
+        foreach (col_nr, ch; line)
+          if (ch != screen_area[line_nr][col_nr])
+            with (area) with (select(col_nr*glyph_w, line_nr*glyph_h, glyph_w, glyph_h)) {
+              clean; blit(getChar(ch));
+            }
+      screen_area=newScreen;
+    }
+    void draw() { update; } /// :sings: REDUNDANCY! F**K YEAH!
   }
   TTF_FontClass f;
   this(void[] font, int size) { f=new TTF_FontClass(font, size); }
 }
 class Nothing : Widget { void draw (Area target) { } }
 
-long eatoi(char[] nr, int max) {
+int eatoi(char[] nr, int max) {
   assert(nr.length);
-  if (nr[$-1]=='%') return (max*atoi(nr[0..$-1]))/100;
-  return atoi(nr);
+  if (nr[$-1]=='%') return cast(int)(max*atoi(nr[0..$-1]))/100;
+  return cast(int)atoi(nr);
 }
 
 template DefaultConstructor() { this(typeof(this.tupleof) t) { foreach (id, bogus; this.tupleof) this.tupleof[id]=cast(typeof(bogus))t[id]; } }
 
 import xml, util, std.string;
-class Frame : ContainerWidget {
+class Frame : FrameWidget {
   FileSource fsrc;
   private {
     Generator [char[]] parts;
@@ -365,26 +363,31 @@ class Frame : ContainerWidget {
     // extract the SDL surfaces for the stuffies
     foreach (name, tree; entries) parts[name]=generate(tree);
   }
-  void draw(Area target) {
-    // draw the frame
-    target.blit(getSurf("top-left"), 0, 0);
-    target.blit(getSurf("top-right"), target.w-getSurf("top-right").w, 0);
-    target.blit(getSurf("bottom-left"), 0, target.h-getSurf("bottom-left").h);
-    target.blit(getSurf("bottom-right"), target.w-getSurf("bottom-right").w, target.h-getSurf("bottom-right").h);
-
-    // draw horizontal stripes
-    target.blit(getSurf("top", target.w-getSurf("top-left").w-getSurf("top-right").w, invalid), getSurf("top-left").w, 0);
-    auto bottom=getSurf("bottom", target.w-getSurf("bottom-left").w-getSurf("bottom-right").w, invalid);
-    target.blit(bottom, getSurf("bottom-left").w, target.h-bottom.h);
-
-    // draw vertical stripes
-    target.blit(getSurf("left", invalid, target.h-getSurf("top-left").h-getSurf("bottom-left").h), 0, getSurf("top-left").h);
-    auto right=getSurf("right", invalid, target.h-getSurf("top-right").h-getSurf("bottom-right").h);
-    target.blit(right, target.w-right.w, getSurf("top-right").h);
-
-    // draw below
-    assert(below !is null);
+  void setRegion(Area region) {
     auto tlw=getSurf("top-left").w; auto tlh=getSurf("top-left").h;
-    below.draw(target.select(tlw, tlh, target.w-tlw-getSurf("bottom-right").w, target.h-tlh-getSurf("bottom-right").h));
+    with (area=region) below.setRegion(select(tlw, tlh, w-tlw-getSurf("bottom-right").w, h-tlh-getSurf("bottom-right").h));
+    draw;
+  }
+  void draw() {
+    with (area) {
+      // draw the frame
+      blit(getSurf("top-left"), 0, 0);
+      blit(getSurf("top-right"), w-getSurf("top-right").w, 0);
+      blit(getSurf("bottom-left"), 0, h-getSurf("bottom-left").h);
+      blit(getSurf("bottom-right"), w-getSurf("bottom-right").w, h-getSurf("bottom-right").h);
+
+      // draw horizontal stripes
+      blit(getSurf("top", w-getSurf("top-left").w-getSurf("top-right").w, invalid), getSurf("top-left").w, 0);
+      auto bottom=getSurf("bottom", w-getSurf("bottom-left").w-getSurf("bottom-right").w, invalid);
+      blit(bottom, getSurf("bottom-left").w, h-bottom.h);
+
+      // draw vertical stripes
+      blit(getSurf("left", invalid, h-getSurf("top-left").h-getSurf("bottom-left").h), 0, getSurf("top-left").h);
+      auto right=getSurf("right", invalid, h-getSurf("top-right").h-getSurf("bottom-right").h);
+      blit(right, w-right.w, getSurf("top-right").h);
+
+      // draw below
+      assert(below !is null); below.draw;
+    }
   }
 }

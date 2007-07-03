@@ -54,7 +54,7 @@ void main ()
   writefln (f.name);
   writefln ("Available space: ", x.space.available);
 
-  Window testWindow = new Window ("Test".dup);
+  //Window testWindow = new Window ("Test".dup);
   auto fsrc=new FileSource(".."~sep~"gfx");
   auto stdframe=cast(xmlTag)parse(read(".."~sep~"gfx"~sep~"std-frame.xml")).children[0];
   auto frame=new Frame(fsrc, stdframe, null);
@@ -62,7 +62,8 @@ void main ()
   auto myGrid=font.new GridTextField(12, 20);
   myGrid.lines~=[WriteGridLine("Hello World"), WriteGridLine(" --Foobar-- "), Cursor];
 
-  frame.below=new Stack(32, true, font.new TextLine("AVL FOOBAR whEEzle".dup), font.new TextLine("AVL FOOBAR whEEzle".dup, true), myGrid);
+  //frame.below=new Stack(32, true, font.new TextLine("AVL FOOBAR whEEzle".dup), font.new TextLine("AVL FOOBAR whEEzle".dup, true), myGrid);
+  frame.below=myGrid;
 
   SDL_Event event;
   bool running = true;
@@ -70,6 +71,8 @@ void main ()
   auto start=getUTCtime()/1000;
   auto current=start;
   bool[SDLKey] handled;
+  SDL_FillRect(screen, null, 0);
+  frame.setRegion(Area(screen));
   while (running) {
     while (SDL_PollEvent (&event)) {
       switch (event.type) {
@@ -90,8 +93,8 @@ void main ()
           break;
       }
     }
-    SDL_FillRect(screen, null, 0);
-    frame.draw(Area(screen));
+    //frame.draw(Area(screen));
+    frame.update;
     SDL_Flip(screen);
     Sleep(10);
     ++count;

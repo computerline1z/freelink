@@ -51,3 +51,21 @@ template sum(T) { const sum=function(ref T a, T b) { a+=b; }; }
 
 T fold(T)(T[] array, void delegate(ref T to, T from) dg) { assert(array.length); foreach (elem; array[1..$]) dg(array[0], elem); return array[0]; }
 T fold(T, Bogus=void)(T[] array, void function(ref T to, T from) fn) { return fold(array, (ref T to, T from) { fn(to, from); }); }
+
+struct _range_foreach {
+  int start; int end;
+  int opApply(int delegate(ref int) dg) {
+    int result=0; for (int c=start; c<end; ++c) {
+      result=dg(c); if (result) break;
+    }
+    return result;
+  }
+}
+
+struct _Integers {
+  _range_foreach opSlice(size_t from, size_t to) {
+    _range_foreach res; res.start=from; res.end=to;
+    return res;
+  }
+}
+_Integers Integers;
