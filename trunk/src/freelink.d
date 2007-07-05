@@ -26,8 +26,8 @@ bool delegate(ref wchar[] target, ref bool newline) Cursor(long ms=500) {
       if ((getUTCtime/ms)%2) target[2+input.length]='_';
       newline=true; return false;
     }
-    void handle(SDLKey key) {
-      if (key<128) input~=cast(char)key;
+    void handle(SDL_keysym sym) {
+      if (sym.sym<128) input~=sym.unicode;
     }
   }
   auto foo=new holder; foo.ms=ms;
@@ -35,11 +35,12 @@ bool delegate(ref wchar[] target, ref bool newline) Cursor(long ms=500) {
   return &foo.call;
 }
 
-void delegate(SDLKey) KeyHandler=null;
+void delegate(SDL_keysym) KeyHandler=null;
 
 import png;
 void main ()
 {
+  SDL_EnableUNICODE=true;
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
 
   writefln (nl("freelink"));
@@ -77,8 +78,8 @@ void main ()
     while (SDL_PollEvent (&event)) {
       switch (event.type) {
         case SDL_EventType.SDL_KEYDOWN:
-          auto key=event.key.keysym.sym;
-          if ((!(key in handled))&&KeyHandler) { KeyHandler(key); handled[key]=true; }
+          auto key=event.key.keysym;
+          if ((!(key.sym in handled))&&KeyHandler) { KeyHandler(key); handled[key.sym]=true; }
           break;
         case SDL_EventType.SDL_KEYUP:
           auto key=event.key.keysym.sym;

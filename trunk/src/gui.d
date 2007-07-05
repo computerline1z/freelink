@@ -140,7 +140,9 @@ class Font {
   }
   class GridTextField : Widget {
     /// returns whether to re-call it. Writes self into target.
-    /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
+    // /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
+    /// ^+-This restriction stems from an earlier phase in development.
+    ///  +-It's not relevant anymore. Please ignore it.
     bool delegate(ref wchar[] target, ref bool newline)[] lines;
     int glyph_w, glyph_h; this(int w, int h) { glyph_w=w; glyph_h=h; }
     wchar[][] screen_area; /// [line] [column]

@@ -374,7 +374,7 @@ enum SDL_GLattr {
     SDL_GL_ACCELERATED_VISUAL,
     SDL_GL_SWAP_CONTROL
 };
-struct SDL_keysym { ubyte scancode; SDLKey sym; SDLMod mod; ushort unicode; }
+struct SDL_keysym { ubyte scancode; SDLKey sym; SDLMod mod; wchar unicode; }
 SDL_VideoInfo *SDL_GetVideoInfo();
 SDL_Surface * SDL_GetVideoSurface();
 int SDL_WM_ToggleFullScreen(SDL_Surface *surface);
@@ -406,6 +406,7 @@ void SDL_GetRGB(uint pixel, SDL_PixelFormat *fmt, ubyte *r, ubyte *g, ubyte *b);
 uint SDL_MapRGBA(SDL_PixelFormat *format, ubyte r, ubyte g, ubyte b, ubyte a);
 void SDL_GetRGBA(uint pixel, SDL_PixelFormat *fmt, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 int SDL_SetAlpha(SDL_Surface *, uint flag, ubyte alpha);
+int SDL_EnableUNICODE(int enable);
 
 const ubyte SDL_APPMOUSEFOCUS=0x01;
 const ubyte SDL_APPINPUTFOCUS=0x02;
