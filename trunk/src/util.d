@@ -19,3 +19,5 @@ template const_enum(T, string csv, string got="", int offset=0) {
       const_enum!(T, csv[1..$], "", offset+1);
   } else const char[] const_enum=const_enum!(T, csv[1..$], got~csv[0], offset);
 }
+
+bool between(T)(T what, T low, T up) { return (what>=low)&&(what<up); }

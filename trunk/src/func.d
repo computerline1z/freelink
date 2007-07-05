@@ -45,9 +45,10 @@ template ReturnType(C, string M) {
   }");
 }
 
-template member(CLASS, string METHOD) { const member=function(CLASS cl) { mixin("return cl."~METHOD~"; "); }; }
+template member(T, char[] METHOD) { const member=function(T t) { mixin("return t."~METHOD~"; "); }; }
 
 template sum(T) { const sum=function(ref T a, T b) { a+=b; }; }
+template concat(T) { const concat=function(ref T a, T b) { a~=b; }; }
 
 T fold(T)(T[] array, void delegate(ref T to, T from) dg) { assert(array.length); foreach (elem; array[1..$]) dg(array[0], elem); return array[0]; }
 T fold(T, Bogus=void)(T[] array, void function(ref T to, T from) fn) { return fold(array, (ref T to, T from) { fn(to, from); }); }
