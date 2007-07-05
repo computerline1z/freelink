@@ -4,9 +4,9 @@ version(Windows) import std.c.windows.windows: Sleep;
 import SDL, gui, xml;
 
 import std.bind;
-bool delegate(ref wchar[] target, ref bool newline) WriteGridLine(wchar[] text) {
+TextGenerator WriteGridLine(wchar[] text) {
   struct holder { wchar[] text;
-    bool call(ref wchar[] target, ref bool newline) {
+    bool call(ref wchar[] target, ref bool newline, uint myIndex) {
       assert(text.length<=target.length);
       target[0..text.length]=text;
       newline=true; return false;
@@ -15,19 +15,35 @@ bool delegate(ref wchar[] target, ref bool newline) WriteGridLine(wchar[] text) 
   auto foo=new holder; foo.text=text; return &foo.call;
 }
 
+import func, util;
+bool writeOn(ref wchar[] target, uint line_nr, wchar[][] text...) {
+  wchar[] str=fold(text, concat!(wchar[]));
+  str=str[target.length*line_nr..$];
+  if (str.length>target.length) {
+    target[0..$]=str[0..target.length];
+    return true;
+  } else {
+    target[0..str.length]=str;
+    return false;
+  }
+}
+
 import std.date:getUTCtime;
-bool delegate(ref wchar[] target, ref bool newline) Cursor(long ms=500) {
+TextGenerator Cursor(long ms=500) {
   struct holder { long ms;
-    char[] input;
-    bool call(ref wchar[] target, ref bool newline) {
-      target[0..2]=cast(wchar[])"> ";
-      wchar[] wch; foreach (ch; input) wch~=cast(wchar)ch;
-      target[2..2+wch.length]=wch;
-      if ((getUTCtime/ms)%2) target[2+input.length]='_';
-      newline=true; return false;
+    wchar[] input;
+    bool call(ref wchar[] target, ref bool newline, uint myLine) {
+      assert(target.length>2, "Text field width too small to be usable any more; must be >2");
+      bool blink=((getUTCtime/ms)%2)?true:false;
+      newline=true;
+      return writeOn(target, myLine, "> "w, input, blink?"_"w:""w);
     }
     void handle(SDL_keysym sym) {
-      if (sym.sym<128) input~=sym.unicode;
+      if (between(cast(int)sym.sym, 32, 128)) input~=sym.unicode;
+      else switch (cast(int)sym.sym) {
+        case 8: if (input.length) input=input[0..$-1]; /// backspace
+        default: writefln("Strange sym: ", sym.sym, " which is '", sym.unicode, "'");
+      }
     }
   }
   auto foo=new holder; foo.ms=ms;
@@ -61,7 +77,7 @@ void main ()
   auto frame=new Frame(fsrc, stdframe, null);
   auto font=new Font(read("cons.ttf"), 20);
   auto myGrid=font.new GridTextField(12, 20);
-  myGrid.lines~=[WriteGridLine("Hello World"), WriteGridLine(" --Foobar-- "), Cursor];
+  myGrid.gens~=[WriteGridLine("Hello World"), WriteGridLine(" --Foobar-- "), Cursor];
 
   //frame.below=new Stack(32, true, font.new TextLine("AVL FOOBAR whEEzle".dup), font.new TextLine("AVL FOOBAR whEEzle".dup, true), myGrid);
   frame.below=myGrid;

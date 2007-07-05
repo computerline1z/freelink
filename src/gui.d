@@ -130,6 +130,8 @@ class Stack : ContainerWidget {
   }
 }*/
 
+alias bool delegate(ref wchar[], ref bool, uint) TextGenerator;
+
 import SDL_ttf;
 class Font {
   SDL_Surface*[wchar] buffer;
@@ -143,7 +145,7 @@ class Font {
     // /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
     /// ^+-This restriction stems from an earlier phase in development.
     ///  +-It's not relevant anymore. Please ignore it.
-    bool delegate(ref wchar[] target, ref bool newline)[] lines;
+    TextGenerator[] gens;
     int glyph_w, glyph_h; this(int w, int h) { glyph_w=w; glyph_h=h; }
     wchar[][] screen_area; /// [line] [column]
     void setRegion(Area target) {
@@ -153,17 +155,18 @@ class Font {
     }
     private wchar[][] eval(size_t xchars, size_t ychars) {
       /// the last line each delegate has rendered.
-      int[typeof(lines[0])] lastlines;
+      int[typeof(gens[0])] lastlines;
       /// [line] [column]
       auto res=new wchar[][ychars]; foreach (inout line; res) line.length=xchars;
       size_t current=0; size_t absolute_current=0;
-      foreach (line; lines) {
+      foreach (gen; gens) {
         bool newline=false;
         bool recall=false;
+        uint line=0;
         do {
-          recall=line(res[current], newline); /// render line into buffer
+          recall=gen(res[current], newline, line++); /// render line into buffer
           assert (res[current].length==xchars, "Error: delegate modified line width");
-          lastlines[line]=absolute_current;
+          lastlines[gen]=absolute_current;
           if (newline) { ++current; ++absolute_current; }
           /// while the cursor is below the screen ...
           while (current>=res.length) {
@@ -176,7 +179,7 @@ class Font {
       /// meaning we can safely delete the delegate.
       foreach (inout line; lastlines) line+=ychars-absolute_current;
       /// which we now do.
-      while (lastlines[lines[0]]<0) lines=lines[1..$];
+      while (lastlines[gens[0]]<0) gens=gens[1..$];
       return res;
     }
     void update() {
