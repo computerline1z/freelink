@@ -1,4 +1,4 @@
-version(DigitalMars) extern (Windows): else extern(C):
+extern(C):
 
 struct gdIOCtx {
   int function(gdIOCtx *) getC;

@@ -1,10 +1,18 @@
-DC=dmd
-LIBS=-L-lSDL
+DC=gdc
+DFLAGS=-Icontrib
+LFLAGS=-lSDL -lSDL_ttf
+OBJECTS=obj/
 
-all:
-	$(DC) -c contrib/SDL.d
-	$(DC) -c -Icontrib/ *.d
-	$(DC) -offreelink *.o $(LIBS)
+all: freelink
+
+resolve_imports:
+
+freelink: $(subst .d,.o,$(shell find -iname "*.d"))
+	$(DC) $(OBJECTS)*.o -o freelink $(LDFLAGS)
+
+%.o: %.d
+	mkdir -p $(OBJECTS)
+	$(DC) $(DFLAGS) -c $< -o $(OBJECTS)$(subst /,_,$@)
 
 clean:
-	rm *.o *~
+	rm $(OBJECTS)*.o

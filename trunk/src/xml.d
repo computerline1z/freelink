@@ -76,7 +76,7 @@ xmlTag parse(char[] xml) {
     if (!tx.data.length) keep=false;
     else {
       keep=false;
-      foreach (ch; tx.data) if ((ch!=' ')&&(ch!='\n')&&(ch!='\r')) keep=true;
+      foreach (ch; tx.data) if ((ch!=' ')&&(ch!='\n')&&(ch!='\r')) { keep=true; break; }
     }
   }); return keep; });
   /// okay now

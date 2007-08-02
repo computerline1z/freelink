@@ -1,47 +1,53 @@
 import computer, file, nls;
 import std.stdio, std.file;
 version(Windows) import std.c.windows.windows: Sleep;
+import std.thread: Thread;
 import SDL, gui, xml;
 
 import std.bind;
 TextGenerator WriteGridLine(wchar[] text) {
   struct holder { wchar[] text;
-    bool call(ref wchar[] target, ref bool newline, uint myIndex) {
+    bool call(ref wchar[] target, bool reset) {
       assert(text.length<=target.length);
+      if (!reset) return false; /// One line should be enough for anybody!
       target[0..text.length]=text;
-      newline=true; return false;
+      return true; /// Re-call for newline
     }
   }
   auto foo=new holder; foo.text=text; return &foo.call;
 }
 
 import func, util;
-bool writeOn(ref wchar[] target, uint line_nr, wchar[][] text...) {
-  wchar[] str=fold(text, concat!(wchar[]));
-  str=str[target.length*line_nr..$];
+bool writeOn(ref wchar[] target, ref size_t offset, wchar[][] text...) {
+  if (offset==size_t.max) return false; /// Ensure the final newline
+  wchar[] str=fold(text, concat!(wchar[]))[offset..$];
   if (str.length>target.length) {
     target[0..$]=str[0..target.length];
+    offset+=target.length;
     return true;
   } else {
     target[0..str.length]=str;
-    return false;
+    offset=size_t.max; /// last newline
+    return true;
   }
 }
 
 import std.date:getUTCtime;
 TextGenerator Cursor(long ms=500) {
   struct holder { long ms;
-    wchar[] input;
-    bool call(ref wchar[] target, ref bool newline, uint myLine) {
+    wchar[] input; size_t offset;
+    bool call(ref wchar[] target, bool reset) {
       assert(target.length>2, "Text field width too small to be usable any more; must be >2");
       bool blink=((getUTCtime/ms)%2)?true:false;
-      newline=true;
-      return writeOn(target, myLine, "> "w, input, blink?"_"w:""w);
+      if (reset) offset=0;
+      return writeOn(target, offset, "> "w, input, blink?"_"w:" "w);
     }
     void handle(SDL_keysym sym) {
-      if (between(cast(int)sym.sym, 32, 128)) input~=sym.unicode;
-      else switch (cast(int)sym.sym) {
-        case 8: if (input.length) input=input[0..$-1]; /// backspace
+      if (between(cast(int)sym.sym, 32, 128)) {
+        input~=sym.unicode;
+        writefln("Added character ", cast(ubyte[])[sym.unicode], " == ", sym.unicode);
+      } else switch (cast(int)sym.sym) {
+        case 8: if (input.length) input=input[0..$-1]; break; /// backspace
         default: writefln("Strange sym: ", sym.sym, " which is '", sym.unicode, "'");
       }
     }
@@ -57,7 +63,7 @@ import png;
 void main ()
 {
   SDL_EnableUNICODE=true;
-  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_SWSURFACE);
+  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_HWSURFACE | SDL_ANYFORMAT);
 
   writefln (nl("freelink"));
   writefln ("Switching to German");
@@ -113,7 +119,8 @@ void main ()
     //frame.draw(Area(screen));
     frame.update;
     SDL_Flip(screen);
-    Sleep(10);
+    //Sleep(10);
+    Thread.yield;
     ++count;
     if (current!=(getUTCtime/1000)) {
       current=getUTCtime/1000;
