@@ -1,5 +1,6 @@
 /// functional routines: map, filter
 module func;
+import util;
 
 /// This version is actually faster than ~=.
 T[] filter(T)(T[] array, bool delegate(T) pick) {

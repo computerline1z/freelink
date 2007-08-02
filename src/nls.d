@@ -6,7 +6,7 @@ static this() {
   nls[""]=init;
   auto lines=map(
     split(cast(char[])read("nls"~sep~"default.txt"), "\n"),/// split into lines
-    (string c) { if (c.length&&(c[$-1]=='\r')) c=c[0..$-1]; return c; } /// remove trailing \r
+    (char[] c) { if (c.length&&(c[$-1]=='\r')) c=c[0..$-1]; return c; } /// remove trailing \r
   );
   foreach (line; lines) {
     if (!line.length) continue;
@@ -27,7 +27,7 @@ char[][char[]][char[]] nls;
 char[] lang;
 
 import std.string:tolower;
-char[] nl(string origin) {
+char[] nl(char[] origin) {
   auto i=origin in nls[lang];
   if (!i) i=origin in nls[""];
   if (!i) {

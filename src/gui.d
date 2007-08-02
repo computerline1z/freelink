@@ -1,5 +1,5 @@
 module gui;
-import SDL, png, func, std.stdio, std.file, std.path: sep;
+import SDL, png, func, util, std.stdio, std.file, std.path: sep;
 
 T min(T, U)(T a, U b) { return a<b?a:cast(T)b; }
 
@@ -21,6 +21,7 @@ final class Area {
   this(SDL_Rect r, SDL_Surface *s) { me=r; mine=s; }
   static Area opCall(Area a) { with (a) return Area(mine, &me); }
   static Area opCall(SDL_Surface *s, SDL_Rect *r=null) {
+    if (!s) *(cast(int*)null)=0;
     if (!r) {
       SDL_Rect full; with (full) { x=0; y=0; w=cast(ushort)s.w; h=cast(ushort)s.h; }
       return new Area(full, s);
@@ -93,16 +94,6 @@ class FrameWidget : ContainerWidget {
 
 interface Generator { SDL_Surface *opCall(size_t xs, size_t ys); }
 
-/*class Window : Widget {
-  char[] title;
-  SDL_Surface *titleBar, left, right, corner, bottom; // We can flip/copy corners right?
-  this (char[] title) {
-    this.title = title;
-    titleBar = decode (read("../gfx/titlebar.png"));
-  }
-  void draw (Area target) { target.blit(titleBar, 10, 10); }
-}*/
-
 class Stack : ContainerWidget {
   Widget[] widgets; int height; bool fillRest;
   this(int height, bool fillRest, Widget[] widgets...) { this.height=height; this.widgets=widgets; this.fillRest=fillRest; }
@@ -117,31 +108,29 @@ class Stack : ContainerWidget {
   void draw () { foreach (w; widgets) w.draw; }
 }
 
-/*class Button : Widget {
-  char[] caption;
-  SDL_Surface *clickedImg, normalImg;
-  bool clicked;
-  void draw (Area target) {
-    if (clicked) {
-      target.blit (clickedImg, 10, 10);
-    } else {
-      target.blit (normalImg, 10, 10);
-    }
-  }
-}*/
+alias bool delegate(ref wchar[], bool reset) TextGenerator;
 
-alias bool delegate(ref wchar[], ref bool, uint) TextGenerator;
+T[] field(T)(size_t count, lazy T generate) {
+  assert(!is(T==void));
+  auto res=new T[count];
+  foreach (inout v; res) v=generate();
+  return res;
+}
 
 import SDL_ttf;
 class Font {
   SDL_Surface*[wchar] buffer;
   ~this() { foreach (surf; buffer) SDL_FreeSurface(surf); }
   SDL_Surface *getChar(wchar ch) {
+    if (ch==wchar.init) ch=' ';
     if (!(ch in buffer)) buffer[ch]=f.render(cast(char[])[ch], white);
+    if (!buffer[ch]) buffer[ch]=getChar('?');
+    if (!buffer[ch]) buffer[ch]=getChar('.');
     return buffer[ch];
   }
   class GridTextField : Widget {
-    /// returns whether to re-call it. Writes self into target.
+    /// returns whether to re-call it (implies newline). Writes self into target.
+    /// _May_ change target.
     // /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
     /// ^+-This restriction stems from an earlier phase in development.
     ///  +-It's not relevant anymore. Please ignore it.
@@ -157,30 +146,25 @@ class Font {
       /// the last line each delegate has rendered.
       int[typeof(gens[0])] lastlines;
       /// [line] [column]
-      auto res=new wchar[][ychars]; foreach (inout line; res) line.length=xchars;
-      size_t current=0; size_t absolute_current=0;
+      auto res=field(ychars, new wchar[xchars]);
+      auto work=res.dup;
+      size_t current=0;
       foreach (gen; gens) {
-        bool newline=false;
         bool recall=false;
-        uint line=0;
+        bool initial=true;
         do {
-          recall=gen(res[current], newline, line++); /// render line into buffer
-          assert (res[current].length==xchars, "Error: delegate modified line width");
-          lastlines[gen]=absolute_current;
-          if (newline) { ++current; ++absolute_current; }
-          /// while the cursor is below the screen ...
-          while (current>=res.length) {
-            res=res[1..$]~new wchar[xchars]; /// append one line at end, shift up.
-            --current;
+          recall=gen(work[current], initial); /// render line into buffer
+          initial=false;
+          if (recall) { current++;}
+          else lastlines[gen]=current;
+          /// while the cursor is below the screen, expand the screen downwards.
+          while (current>=work.length) {
+            auto newline=new wchar[xchars];
+            work~=newline; res~=newline;
           }
         } while (recall);
       }
-      /// if the line value is negative, it means the last line for that delegate is off the screen
-      /// meaning we can safely delete the delegate.
-      foreach (inout line; lastlines) line+=ychars-absolute_current;
-      /// which we now do.
-      while (lastlines[gens[0]]<0) gens=gens[1..$];
-      return res;
+      return res[$-ychars..$];
     }
     void update() {
       auto newScreen=eval(screen_area[0].length, screen_area.length);
