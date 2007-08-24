@@ -1,3 +1,4 @@
+module hardware;
 import nls;
 
 typedef uint kquad;  // KiloQuad, used in Star Trek and Uplink

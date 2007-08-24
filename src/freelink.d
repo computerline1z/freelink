@@ -1,3 +1,4 @@
+module freelink;
 import computer, file, nls;
 import std.stdio, std.file;
 version(Windows) import std.c.windows.windows: Sleep;
@@ -17,10 +18,10 @@ TextGenerator WriteGridLine(wchar[] text) {
   auto foo=new holder; foo.text=text; return &foo.call;
 }
 
-import func, util;
+import tools.iter;
 bool writeOn(ref wchar[] target, ref size_t offset, wchar[][] text...) {
   if (offset==size_t.max) return false; /// Ensure the final newline
-  wchar[] str=fold(text, concat!(wchar[]))[offset..$];
+  wchar[] str=(iterate(text)~reduces!("_~=__"))[offset..$];
   if (str.length>target.length) {
     target[0..$]=str[0..target.length];
     offset+=target.length;
@@ -31,6 +32,8 @@ bool writeOn(ref wchar[] target, ref size_t offset, wchar[][] text...) {
     return true;
   }
 }
+
+bool between(T)(T v, T lower, T upper) { return (v>=lower)&&(v<upper); }
 
 import std.date:getUTCtime;
 TextGenerator Cursor(long ms=500) {
@@ -81,7 +84,7 @@ void main ()
   auto fsrc=new FileSource(".."~sep~"gfx");
   auto stdframe=cast(xmlTag)parse(read(".."~sep~"gfx"~sep~"std-frame.xml")).children[0];
   auto frame=new Frame(fsrc, stdframe, null);
-  auto font=new Font(read("cons.ttf"), 20);
+  auto font=new Font(read("cour.ttf"), 20);
   auto myGrid=font.new GridTextField(12, 20);
   myGrid.gens~=[WriteGridLine("Hello World"), WriteGridLine(" --Foobar-- "), Cursor];
 
