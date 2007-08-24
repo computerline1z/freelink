@@ -1,13 +1,13 @@
 module xml;
 
-import util, func, mystring;
+import mystring, tools.ext;
 
 interface xmlElement { char[] toString(); };
 
 class xmlText : xmlElement {
   final char[] data;
   this(char[] whut) { data=whut; }
-  char[] toString() { return "\""~data~"\""; }
+  char[] toString() { return "\""~data~"\""; } // "
 }
 
 class xmlTag : xmlElement {
@@ -16,7 +16,7 @@ class xmlTag : xmlElement {
   xmlElement[] children;
   char[] toString() {
     char[] res="<"~name;
-    foreach (id, text; attributes) res~=" ["~id~"]=\""~text~"\"";
+    foreach (id, text; attributes) res~=" ["~id~"]=\""~text~"\""; // "
     res~=">";
     foreach (elem; children) res~=elem.toString;
     res~="</"~name~">";
@@ -41,18 +41,18 @@ xmlTag parse(char[] xml) {
     assert(xml.find(">")!=-1);
     size_t endTag=xml.find(">");
 
-    mixin(const_enum!(ubyte, "tmNormal, tmString"));
-    ubyte mode=tmNormal;
+    enum tmMode { normal, string }
+    auto mode=tmMode.normal;
     /// read tag into parts
     foreach (ch; xml[0..endTag]) {
       switch (mode) {
-        case tmNormal:
-          if (ch=='"') { mode=tmString; continue; }
+        case tmMode.normal:
+          if (ch=='"') { mode=tmMode.string; continue; }
           if (ch==' ') { parts.length=parts.length+1; continue; }
           parts[$-1]~=ch;
           break;
-        case tmString:
-          if (ch=='"') { mode=tmNormal; continue; }
+        case tmMode.string:
+          if (ch=='"') { mode=tmMode.normal; continue; }
           parts[$-1]~=ch;
           break;
         default: assert(false, "uh wtf");
@@ -62,7 +62,10 @@ xmlTag parse(char[] xml) {
     auto newtag=new xmlTag;
     with (newtag) {
       name=parts[0];
-      foreach (pair; map(parts[1..$], (char[] c) { auto sp=c.split("="); return [sp[0], sp[1..$].join("=")].dup; })) {
+      foreach (pair;
+        parts[1..$]~map((char[] c) {
+          auto sp=c.split("="); return [sp[0], sp[1..$].join("=")].dup;
+        })) {
         attributes[pair[0]]=pair[1].dup;
       }
     }
@@ -72,13 +75,13 @@ xmlTag parse(char[] xml) {
   }
   list~=new xmlText(xml);
   /// filter practically empty tags
-  list=filter(list, (xmlElement e) { bool keep=true; ifIs(e, (xmlText tx) {
+  list=list~filter((xmlElement e) { bool keep=true; ifIs(e, (xmlText tx) {
     if (!tx.data.length) keep=false;
     else {
       keep=false;
       foreach (ch; tx.data) if ((ch!=' ')&&(ch!='\n')&&(ch!='\r')) { keep=true; break; }
     }
-  }); return keep; });
+  }); return keep; })~toArray;
   /// okay now
   /// while there's still unprocessed tags in the list
   /// take them, and search for the respective ending tag

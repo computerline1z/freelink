@@ -1,3 +1,4 @@
+module computer;
 import file, hardware;
 
 class Computer

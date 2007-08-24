@@ -1,6 +1,6 @@
 module png;
 
-import std.stdio, std.string, std.traits, std.zlib, func, SDL, std.math: abs;
+import std.stdio, std.string, std.traits, std.zlib, SDL, tools.iter, std.math: abs;
 
 template ArrayElemType(T: T[]) { alias T ArrayElemType; }
 
@@ -56,7 +56,7 @@ SDL_Surface *decode(void[] _data) {
   uint width, height, depth, color;
   while (data.length) {
     auto len=chip!(uint, true)(data);
-    auto type=chip!(char[4])(data); auto upper=map(type, (char c) { return (c&(1<<5))?false:true; });
+    auto type=chip!(char[4])(data); auto upper=type~maps!("(_&(1<<5))?false:true")~toArray;
     auto chunk=data[0..len];
     data=data[len..$];
     auto crc=chip!(uint)(data);

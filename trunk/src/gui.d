@@ -1,5 +1,5 @@
 module gui;
-import SDL, png, func, util, std.stdio, std.file, std.path: sep;
+import SDL, png, std.stdio, std.file, tools.ext, std.path: sep;
 
 T min(T, U)(T a, U b) { return a<b?a:cast(T)b; }
 
@@ -191,7 +191,7 @@ int eatoi(char[] nr, int max) {
 
 template DefaultConstructor() { this(typeof(this.tupleof) t) { foreach (id, bogus; this.tupleof) this.tupleof[id]=cast(typeof(bogus))t[id]; } }
 
-import xml, util, std.string;
+import xml, std.string;
 class Frame : FrameWidget {
   FileSource fsrc;
   private {
@@ -276,7 +276,9 @@ class Frame : FrameWidget {
           assert(tag.children.length==1, "Error: No surface below "~tag.toString);
           auto supergen=generate(tag.children[0]);
           // rectangle strings
-          char[][] r_str=map(split(tag.attributes["from"], ",")~split(tag.attributes["to"], ","), member!(string, "dup"));
+          //char[][] r_str=map(split(tag.attributes["from"], ",")~split(tag.attributes["to"], ","), member!(string, "dup"));
+          char[][] r_str=(tag.attributes["from"].split(",")~tag.attributes["to"].split(","))
+            ~maps!("_.dup")~toArray;
           foreach (ref text; r_str) text=strip(text).dup;
           assert(r_str.length==4);
           res=new class(generate(tag.children[0]), r_str) Generator {
