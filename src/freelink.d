@@ -36,9 +36,9 @@ bool writeOn(ref wchar[] target, ref size_t offset, wchar[][] text...) {
 bool between(T)(T v, T lower, T upper) { return (v>=lower)&&(v<upper); }
 
 import std.date:getUTCtime;
-TextGenerator Cursor(long ms=500) {
+TextGenerator Cursor(void delegate(wchar[]) lineCB, long ms=500) {
   struct holder { long ms;
-    wchar[] input; size_t offset;
+    wchar[] input; size_t offset; void delegate(wchar[]) lineCB;
     bool call(ref wchar[] target, bool reset) {
       assert(target.length>2, "Text field width too small to be usable any more; must be >2");
       bool blink=((getUTCtime/ms)%2)?true:false;
@@ -51,11 +51,12 @@ TextGenerator Cursor(long ms=500) {
         writefln("Added character ", cast(ubyte[])[sym.unicode], " == ", sym.unicode);
       } else switch (cast(int)sym.sym) {
         case 8: if (input.length) input=input[0..$-1]; break; /// backspace
+        case 13: lineCB(input); input=""; break; /// CR
         default: writefln("Strange sym: ", sym.sym, " which is '", sym.unicode, "'");
       }
     }
   }
-  auto foo=new holder; foo.ms=ms;
+  auto foo=new holder; foo.ms=ms; foo.lineCB=lineCB;
   KeyHandler=&foo.handle;
   return &foo.call;
 }
@@ -86,7 +87,13 @@ void main ()
   auto frame=new Frame(fsrc, stdframe, null);
   auto font=new Font(read("cour.ttf"), 20);
   auto myGrid=font.new GridTextField(12, 20);
-  myGrid.gens~=[WriteGridLine("Hello World"), WriteGridLine(" --Foobar-- "), Cursor];
+  void GotLine(wchar[] text) {
+    with (myGrid) {
+      gens~=gens[$-1];
+      gens[$-2]=WriteGridLine("> "~text);
+    }
+  }
+  myGrid.gens~=[WriteGridLine("Hello World"), WriteGridLine(" --Foobar-- "), Cursor(&GotLine)];
 
   //frame.below=new Stack(32, true, font.new TextLine("AVL FOOBAR whEEzle".dup), font.new TextLine("AVL FOOBAR whEEzle".dup, true), myGrid);
   frame.below=myGrid;
