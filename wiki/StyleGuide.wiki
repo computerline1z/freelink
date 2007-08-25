@@ -1,4 +1,5 @@
 #summary Style guide for Freelink code
+#labels Featured,Phase-Implementation
 
 == Style Guide ==
 
@@ -55,3 +56,7 @@ void someFunc() {
   }
 }
 }}}
+
+=== Everything else ===
+
+All other dirty tricks are acceptable. If the trick is really dirty, document it with comments to explain _why_ (and maybe _how_) it works.
