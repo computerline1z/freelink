@@ -36,36 +36,55 @@ bool writeOn(ref wchar[] target, ref size_t offset, wchar[][] text...) {
 bool between(T)(T v, T lower, T upper) { return (v>=lower)&&(v<upper); }
 
 import std.date:getUTCtime;
-TextGenerator Cursor(void delegate(wchar[]) lineCB, long ms=500) {
-  struct holder { long ms;
-    wchar[] input; size_t offset; void delegate(wchar[]) lineCB;
-    bool call(ref wchar[] target, bool reset) {
-      assert(target.length>2, "Text field width too small to be usable any more; must be >2");
-      bool blink=((getUTCtime/ms)%2)?true:false;
-      if (reset) offset=0;
-      return writeOn(target, offset, "> "w, input, blink?"_"w:" "w);
-    }
-    void handle(SDL_keysym sym) {
-      if (between(cast(int)sym.sym, 32, 128)) {
-        input~=sym.unicode;
-        writefln("Added character ", cast(ubyte[])[sym.unicode], " == ", sym.unicode);
-      } else switch (cast(int)sym.sym) {
-        case 8: if (input.length) input=input[0..$-1]; break; /// backspace
-        case 13: lineCB(input); input=""; break; /// CR
-        default: writefln("Strange sym: ", sym.sym, " which is '", sym.unicode, "'");
-      }
+class Cursor {
+  long ms;
+  wchar[] input; size_t offset; void delegate(wchar[]) lineCB;
+  bool show=true;
+  bool generate(ref wchar[] target, bool reset) {
+    assert(target.length>2, "Text field width too small to be usable any more; must be >2");
+    bool blink=((getUTCtime/ms)%2)?true:false;
+    if (reset) offset=0;
+    if (show) return writeOn(target, offset, "> "w, input, blink?"_"w:" "w);
+    else return writeOn(target, offset, blink?"_"w:" "w);
+  }
+  void handle(SDL_keysym sym) {
+    if (between(cast(int)sym.sym, 32, 128)) {
+      input~=sym.unicode;
+      writefln("Added character ", cast(ubyte[])[sym.unicode], " == ", sym.unicode);
+    } else switch (cast(int)sym.sym) {
+      case 8: if (input.length) input=input[0..$-1]; break; /// backspace
+      case 13: lineCB(input); input=""; break; /// CR
+      default: writefln("Strange sym: ", sym.sym, " which is '", sym.unicode, "'");
     }
   }
-  auto foo=new holder; foo.ms=ms; foo.lineCB=lineCB;
-  KeyHandler=&foo.handle;
-  return &foo.call;
+  this(void delegate(wchar[]) lineCB, long ms=500) {
+    this.ms=ms; this.lineCB=lineCB;
+    KeyHandler=&handle;
+  }
 }
 
 void delegate(SDL_keysym) KeyHandler=null;
 
 import png;
+import std.c.time: sleep;
+import tools.threadpool;
+
+struct _fix(T) {
+  T what;
+  R delegate(P) opCat_r(R, P...)(R delegate(T, P) dg) {
+    struct holder {
+      T what; R delegate(T, P) dg;
+      R call(P p) { return dg(what, p); }
+    }
+    auto h=new holder; h.what=what; h.dg=dg;
+    return &h.call;
+  }
+}
+_fix!(T) fix(T)(T v) { return _fix!(T)(v); }
+
 void main ()
 {
+  auto p=new ThreadPool(1);
   SDL_EnableUNICODE=true;
   SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32,
                                           SDL_HWSURFACE | SDL_ANYFORMAT);
@@ -88,15 +107,25 @@ void main ()
                                        ~ sep ~ "std-frame.xml")).children[0];
   auto frame = new Frame(fsrc, stdframe, null);
   auto font = new Font(read("cour.ttf"), 20);
-  auto myGrid = font.new GridTextField(12, 20);
+  auto myGrid = font.new GridTextField(12, 24);
+  Cursor cursor=void;
   void GotLine(wchar[] text) {
     with (myGrid) {
-      gens ~= gens[$-1];
-      gens[$-2] = WriteGridLine("> " ~ text);
+      gens ~= gens[$-1]; // dup cursor on end
+      gens[$-2] = WriteGridLine("> " ~ text); // and freeze previous pos
     }
+    cursor.show=false;
+    // actual callback goes here
+    // placeholder that just waits 2s
+    p.addTask((Cursor cursor) {
+      auto start=getUTCtime();
+      while (getUTCtime()-start<2000) { }
+      cursor.show=true;
+    }~fix(cursor));
   }
+  cursor=new Cursor(&GotLine);
   myGrid.gens ~= [WriteGridLine("Hello World"),
-                  WriteGridLine(" --Foobar-- "), Cursor(&GotLine)];
+                  WriteGridLine(" --Foobar-- "), &cursor.generate];
 
   //frame.below = new Stack(32, true,
   //                        font.new TextLine("AVL FOOBAR whEEzle".dup),
