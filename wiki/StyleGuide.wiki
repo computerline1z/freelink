@@ -57,6 +57,41 @@ void someFunc() {
 }
 }}}
 
+=== Classes ===
+
+Class names are in camel-caps. The 1st letter is always upper-case.
+
+Wrong:
+{{{
+class myClass { ... }
+class another_wrong_class_name { ... }
+class Myclassnameis wrong { ... }
+}}}
+
+Right:
+{{{
+class MyClass { ... }
+class AnotherWrongClassName { ... }
+class MyClassNameIsRight { ... }
+}}}
+
+Class methods are in camel-caps. The 1st letter is always lower-case.
+
+Wrong:
+{{{
+class MyClass {
+  void DoStuff() { ... };
+  void do_more_stuff() { ... };
+}
+}}}
+
+Right:
+{{{
+class MyClass {
+  void doStuff() { ... };
+  void doMoreStuff() { ... };
+}}}
+
 === Everything else ===
 
 All other dirty tricks are acceptable. If the trick is really dirty, document it with comments to explain _why_ (and maybe _how_) it works.
