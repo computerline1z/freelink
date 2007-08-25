@@ -1,5 +1,5 @@
 module gui.base;
-import std.stdio, SDL, std.file, std.string, std.path: sep;
+import std.stdio, contrib.SDL, std.file, std.string, std.path: sep;
 public import gui.area;
 
 class FileSource {

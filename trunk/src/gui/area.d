@@ -1,5 +1,5 @@
 module gui.area;
-import SDL, tools.base, std.stdio: format;
+import contrib.SDL, tools.base, std.stdio: format;
 
 const invalid=size_t.max;
 
