@@ -127,6 +127,19 @@ T[] field(T)(size_t count, lazy T generate) {
   return res;
 }
 
+struct _fix(T...) {
+  T what;
+  R delegate(P[T.length..$]) opCat_r(R, P...)(R delegate(P) dg) {
+    struct holder {
+      T what; R delegate(P) dg;
+      R call(P[T.length..$] p) { return dg(what, p); }
+    }
+    auto h=new holder; foreach (id, entry; what) h.what[id]=entry; h.dg=dg;
+    return &h.call;
+  }
+}
+_fix!(T) fix(T...)(T v) { return _fix!(T)(v); }
+
 import tools.tests;
 unittest {
   mustEqual("ChainTest", (chain~(int e) { return e*2; }~(int e) { return e/2; })(5), 5);

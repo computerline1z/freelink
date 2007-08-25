@@ -67,21 +67,7 @@ void delegate(SDL_keysym) KeyHandler=null;
 
 import png;
 import std.c.time: sleep;
-import tools.threadpool;
-
-struct _fix(T) {
-  T what;
-  R delegate(P) opCat_r(R, P...)(R delegate(T, P) dg) {
-    struct holder {
-      T what; R delegate(T, P) dg;
-      R call(P p) { return dg(what, p); }
-    }
-    auto h=new holder; h.what=what; h.dg=dg;
-    return &h.call;
-  }
-}
-_fix!(T) fix(T)(T v) { return _fix!(T)(v); }
-
+import tools.threadpool, tools.ext;
 void main ()
 {
   auto p=new ThreadPool(1);
