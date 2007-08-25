@@ -112,11 +112,7 @@ void main ()
   cursor=new Cursor(&GotLine);
   myGrid.gens ~= [WriteGridLine("Hello World"),
                   WriteGridLine(" --Foobar-- "), &cursor.generate];
-
-  //frame.below = new Stack(32, true,
-  //                        font.new TextLine("AVL FOOBAR whEEzle".dup),
-  //                        font.new TextLine("AVL FOOBAR whEEzle".dup, true),
-  //                        myGrid);
+  
   frame.below = myGrid;
 
   SDL_Event event;

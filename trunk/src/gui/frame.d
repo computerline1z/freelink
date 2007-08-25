@@ -53,7 +53,7 @@ class Frame : FrameWidget {
             SDL_Surface *opCall(size_t xs, size_t ys) {
               // first acquire the surface above us
               auto s = sup(invalid, invalid);
-              assert (xs != invalid || ys != invalid),
+              assert (xs != invalid || ys != invalid,
                       "Error: Repeater: width _and_ height invalid; repeater pointless.");
               // X repetition first
               if (xs != invalid) {
@@ -97,7 +97,7 @@ class Frame : FrameWidget {
           char[][] r_str = (tag.attributes["from"].split(",")~tag.attributes["to"].split(","))
             ~maps!("_.dup")~toArray;
           foreach (ref text; r_str) text = strip(text).dup;
-          assert(r_str.length = =4);
+          assert(r_str.length == 4);
           res = new class(generate(tag.children[0]), r_str) Generator {
             Generator sup; char[][] str; mixin DefaultConstructor;
             SDL_Surface *opCall(size_t xs, size_t ys) {
@@ -169,7 +169,7 @@ class Frame : FrameWidget {
   this(FileSource fsrc, xmlTag frame, Widget w) {
     below = w;
     this.fsrc = fsrc;
-    assert(frame.name =  = "frame", "Frame tag data not actually frame");
+    assert(frame.name == "frame", "Frame tag data not actually frame");
     xmlElement[char[]] entries;
     char[][char[]] modestr;
     foreach (_ch; frame.children) {
