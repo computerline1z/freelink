@@ -112,6 +112,3 @@ xmlTag parse(char[] xml) {
   auto root=new xmlTag; root.children=list;
   return root;
 }
-
-//import std.stdio, std.file;
-//static this() { writefln(parse(cast(char[])read(r"..\gfx\std-frame.xml"))); std.c.stdlib.exit(0); }

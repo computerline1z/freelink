@@ -112,7 +112,9 @@ alias bool delegate(ref wchar[], bool reset) TextGenerator;
 
 T[] field(T)(size_t count, lazy T generate) {
   assert(!is(T==void));
-  auto res=new T[count];
+  // avoid array initialization to default values (that's why it's not new void[count])
+  auto res=(cast(T*)(new void[count*T.sizeof]).ptr)[0..count];
+  assert(res.length==count, "Sanity failed: redetermine length manually");
   foreach (inout v; res) v=generate();
   return res;
 }
