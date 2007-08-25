@@ -83,8 +83,8 @@ xmlTag parse(char[] xml) {
   }); return keep; })~toArray;
   /// okay now
   /// while there's still unprocessed tags in the list
-  /// take them, and search for the respective ending tag
-  /// when found, recurse
+  /// take them, and recurse
+  /// return when found the respective ending tag
   xmlElement[] treeify(char[] scopename="") {
     xmlElement[] res;
     while (list.length) {
