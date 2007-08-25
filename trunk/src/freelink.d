@@ -38,22 +38,36 @@ bool between(T)(T v, T lower, T upper) { return (v>=lower)&&(v<upper); }
 import std.date:getUTCtime;
 class Cursor {
   long ms;
-  wchar[] input; size_t offset; void delegate(wchar[]) lineCB;
+  wchar[] inbuffer; wchar[] line; size_t offset; void delegate(wchar[]) lineCB;
   bool show=true;
+  /// Process the input buffer
+  void push() {
+    // only clear the buffer if show is set
+    if(show) {
+      while (inbuffer.length) {
+        switch (inbuffer[0]) {
+          case 8: if (line.length) line=line[0..$-1]; break; /// backspace
+          case 13: lineCB(line); line=""; break; /// CR
+          default: line~=inbuffer[0];
+        }
+        inbuffer=inbuffer[1..$];
+        if (!show) break;
+      }
+    }
+  }
   bool generate(ref wchar[] target, bool reset) {
     assert(target.length>2, "Text field width too small to be usable any more; must be >2");
     bool blink=((getUTCtime/ms)%2)?true:false;
     if (reset) offset=0;
-    if (show) return writeOn(target, offset, "> "w, input, blink?"_"w:" "w);
+    if (show) return writeOn(target, offset, "> "w, line, blink?"_"w:" "w);
     else return writeOn(target, offset, blink?"_"w:" "w);
   }
   void handle(SDL_keysym sym) {
     if (between(cast(int)sym.sym, 32, 128)) {
-      input~=sym.unicode;
+      inbuffer~=sym.unicode;
       writefln("Added character ", cast(ubyte[])[sym.unicode], " == ", sym.unicode);
     } else switch (cast(int)sym.sym) {
-      case 8: if (input.length) input=input[0..$-1]; break; /// backspace
-      case 13: lineCB(input); input=""; break; /// CR
+      case 8, 13: inbuffer~=cast(char)sym.sym;
       default: writefln("Strange sym: ", sym.sym, " which is '", sym.unicode, "'");
     }
   }
@@ -105,7 +119,7 @@ void main ()
     // placeholder that just waits 2s
     p.addTask((Cursor cursor) {
       auto start=getUTCtime();
-      while (getUTCtime()-start<2000) { }
+      while (getUTCtime()-start<1000) { }
       cursor.show=true;
     }~fix(cursor));
   }
@@ -146,6 +160,7 @@ void main ()
           break;
       }
     }
+    cursor.push;
     //frame.draw(Area(screen));
     frame.update;
     SDL_Flip(screen);
