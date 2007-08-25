@@ -1,5 +1,5 @@
 module computer;
-import file, hardware;
+import file, hardware, tools.iter;
 
 class Computer
 {
@@ -13,12 +13,9 @@ class Computer
   FileSystem fs;
 
   final class Space {
-    kquad max () {
-      kquad x;
-      foreach (d; drives)
-        x += d.space;
-      return x;
-    }
+    kquad max () { return drives~maps!("_.space")~reduces!("_+=__"); }
+    /*kquad x; foreach (d; drives) x += d.space; return x;
+    }*/
     kquad used () {
       return fs.used;
     }
