@@ -76,39 +76,34 @@ xmlTag parse(char[] xml) {
   list~=new xmlText(xml);
   /// filter practically empty tags
   list=list~filter((xmlElement e) { bool keep=true; ifIs(e, (xmlText tx) {
-    if (!tx.data.length) keep=false;
-    else {
-      keep=false;
-      foreach (ch; tx.data) if ((ch!=' ')&&(ch!='\n')&&(ch!='\r')) { keep=true; break; }
-    }
+    keep=false;
+    if (tx.data.length)
+      foreach (ch; tx.data)
+        if ((ch!=' ')&&(ch!='\n')&&(ch!='\r')) { keep=true; break; }
   }); return keep; })~toArray;
   /// okay now
   /// while there's still unprocessed tags in the list
   /// take them, and search for the respective ending tag
   /// when found, recurse
-  void treeify(ref xmlElement[] array) {
-    size_t pos=0;
-    while (pos<array.length) {
-      ifIs(array[pos], (xmlTag tag) {
-        size_t endpos=pos+1;
-        while (endpos<array.length) {
-          bool found=false;
-          ifIs(array[endpos], (xmlTag etag) { if (etag.name=="/"~tag.name) found=true; });
-          if (found) break;
-          endpos++;
+  xmlElement[] treeify(char[] scopename="") {
+    xmlElement[] res;
+    while (list.length) {
+      xmlElement current=list[0]; list=list[1..$];
+      auto tag=cast(xmlTag) current;
+      if (tag) {
+        if (tag.name[0]=='/') {
+          if (tag.name[1..$]!=scopename)
+            throw new Exception("Invalid structure: "~tag.name[1..$]~" closed but "~scopename~" still open");
+          return res;
+        } else {
+          tag.children=treeify(tag.name);
+          res~=tag; // fill tag up and append
         }
-        if (endpos==array.length) assert(false, tag.name~": closing tag not found");
-        /// now remove array[pos+1..endpos] from the array; endpos not included.
-        xmlElement[] sublist=array[pos+1..endpos];
-        array=array[0..pos+1]~array[endpos+1..$]; /// neatly cut it out, keeping pos
-        /// ... recurse
-        treeify(sublist);
-        tag.children=sublist; /// aaaand tree it.
-      });
-      ++pos;
+      } else res~=current;
     }
+    if (scopename.length) throw new Exception("Invalid structure: "~scopename~" never closed");
+    return res;
   }
-  treeify(list);
-  auto root=new xmlTag; root.children=list;
+  auto root=new xmlTag; root.children=treeify;
   return root;
 }
