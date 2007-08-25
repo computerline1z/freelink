@@ -92,6 +92,10 @@ class MyClass {
   void doMoreStuff() { ... };
 }}}
 
+=== Functions ===
+
+Function names are in camel-caps. The 1st letter is always lower-case.
+
 === Everything else ===
 
 All other dirty tricks are acceptable. If the trick is really dirty, document it with comments to explain _why_ (and maybe _how_) it works.
