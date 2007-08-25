@@ -1,6 +1,6 @@
 module gui.text;
 import gui.base, tools.base;
-import SDL, SDL_ttf;
+import contrib.SDL, contrib.SDL_ttf;
 
 class Font {
   SDL_Surface*[wchar] buffer;

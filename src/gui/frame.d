@@ -1,6 +1,6 @@
 module gui.frame;
 import gui.base;
-import xml, std.string, SDL, tools.ext, png;
+import xml, std.string, contrib.SDL, tools.ext, png;
 
 class Frame : FrameWidget {
   FileSource fsrc;

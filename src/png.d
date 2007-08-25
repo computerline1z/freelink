@@ -1,6 +1,6 @@
 module png;
 
-import std.stdio, std.string, std.traits, std.zlib, SDL, tools.iter, std.math: abs;
+import std.stdio, std.string, std.traits, std.zlib, contrib.SDL, tools.iter, std.math: abs;
 
 template ArrayElemType(T: T[]) { alias T ArrayElemType; }
 
