@@ -1,199 +1,7 @@
-module gui;
-import SDL, png, std.stdio, std.file, tools.ext, std.path: sep;
+module gui.frame;
+import gui.base;
+import xml, std.string, SDL, tools.ext, png;
 
-T min(T, U)(T a, U b) { return a<b?a:cast(T)b; }
-
-class FileSource {
-  string basepath;
-  this(string path=".") { basepath=path; }
-  static FileSource opCall(string path=".") { return new FileSource(path); }
-  void[] getFile(char[] name) {
-    return read(basepath~sep~name);
-  }
-}
-
-const invalid=size_t.max;
-
-final class Area {
-  SDL_Rect me; SDL_Surface *mine;
-  int w() { return me.w; } int h() { return me.h; }
-  int x() { return me.x; } int y() { return me.y; }
-  this(SDL_Rect r, SDL_Surface *s) { me=r; mine=s; }
-  static Area opCall(Area a) { with (a) return Area(mine, &me); }
-  static Area opCall(SDL_Surface *s, SDL_Rect *r=null) {
-    if (!s) *(cast(int*)null)=0;
-    if (!r) {
-      SDL_Rect full; with (full) { x=0; y=0; w=cast(ushort)s.w; h=cast(ushort)s.h; }
-      return new Area(full, s);
-    }
-    return new Area(*r, s);
-  }
-  int blit (SDL_Surface *surf, size_t x=0, size_t y=0, size_t w=0, size_t h=0) {
-    return blit(Area(surf), x, y, w, h);
-  }
-  void clean() { SDL_FillRect(mine, &me, 0); }
-  int blit (Area area, size_t x=0, size_t y=0, size_t w=0, size_t h=0) { /// blit area on me at x, y
-    SDL_Rect dest = void;
-    if (!w) w=min(cast(ushort)area.w, this.w); if (!h) h=min(cast(ushort)area.h, this.h);
-    dest.x=cast(short)(x+me.x); dest.y=cast(short)(y+me.y);
-    dest.w=cast(ushort)w; dest.h=cast(ushort)h;
-    SDL_Rect src=dest;
-    src.x=area.me.x; src.y=area.me.y;
-    return SDL_BlitSurface (area.mine, &src, mine, &dest);
-  }
-  Area select(size_t x, size_t y, size_t w=invalid, size_t h=invalid) {
-    assert(x<this.w);
-    assert(y<this.h);
-    if (w==invalid) w=this.w-x; if (h==invalid) h=this.h-y;
-    assert(x+w<me.x+this.w);
-    assert(y+h<me.y+this.h);
-    SDL_Rect nr=void; nr.x=cast(short)(x+me.x); nr.y=cast(short)(y+me.y); nr.w=cast(ushort)w; nr.h=cast(ushort)h;
-    return new Area(nr, mine);
-  }
-  bool sameSize(Area foo) { return (foo.w==w)&&(foo.h==h); }
-  bool sameRect(Area foo) { return sameSize(foo)&&(foo.x==x)&&(foo.y==y); }
-  bool sameSurf(Area foo) { return mine == foo.mine; }
-  bool overlaps(Area foo) { return !((foo.x>x+w)||(foo.x+foo.w<x)||(foo.y>y+h)||(foo.y+foo.h<y)); }
-  char[] toString() { return format("Area[", me.x, "-", me.y, " : ", me.w, "-", me.h, "]"); }
-}
-
-class Widget {
-  bool tainted=false; void taint() { tainted=true; }
-  //final void taintcheck(void delegate() dg) { if (tainted) { dg(); tainted=false; } }
-  abstract void draw ();
-  /// check if redraws are necessary
-  abstract void update ();
-  /// Where we live.
-  private Area area=null;
-  /// force setRegion to treat area as pristine
-  void fullRedraw() { assert(area !is null, "Can't fullRedraw while area not set"); auto backup=area; area=null; setRegion(backup); }
-  /// used to position/move the drawing region. Might trigger a re-draw.
-  void setRegion(Area region) {
-    assert(region.mine);
-    if (area&&region.sameSurf(area)&&region.sameSize(area)) {
-      if (!region.sameRect(area)) {
-        if (!region.overlaps(area)) {
-          region.blit(area);
-          area=region;
-        } else { area=region; draw; }
-      }
-    } else { area=region; draw; }
-  }
-}
-
-class ContainerWidget : Widget {
-  abstract void setRegion(Area region);
-}
-
-class FrameWidget : ContainerWidget {
-  private Widget _below;
-  void below (Widget w) { _below=w; }
-  Widget below () { return _below; }
-  void update() { below.update; }
-}
-
-interface Generator { SDL_Surface *opCall(size_t xs, size_t ys); }
-
-class Stack : ContainerWidget {
-  Widget[] widgets; int height; bool fillRest;
-  this(int height, bool fillRest, Widget[] widgets...) { this.height=height; this.widgets=widgets; this.fillRest=fillRest; }
-  void update() { foreach (w; widgets) w.update; }
-  void setRegion(Area target) {
-    assert(widgets.length*height<target.h);
-    if (fillRest) {
-      foreach (i, w; widgets[0..$-1]) w.setRegion(target.select(0, height*i, target.w, height));
-      widgets[$-1].setRegion(target.select(0, (widgets.length-1)*height));
-    } else foreach (i, w; widgets) w.setRegion(target.select(0, height*i, target.w, height));
-  }
-  void draw () { foreach (w; widgets) w.draw; }
-}
-
-alias bool delegate(ref wchar[], bool reset) TextGenerator;
-
-T[] field(T)(size_t count, lazy T generate) {
-  assert(!is(T==void));
-  // avoid array initialization to default values (that's why it's not new void[count])
-  auto res=(cast(T*)(new void[count*T.sizeof]).ptr)[0..count];
-  assert(res.length==count, "Sanity failed: redetermine length manually");
-  foreach (inout v; res) v=generate();
-  return res;
-}
-
-import SDL_ttf;
-class Font {
-  SDL_Surface*[wchar] buffer;
-  ~this() { foreach (surf; buffer) SDL_FreeSurface(surf); }
-  SDL_Surface *getChar(wchar ch) {
-    if (ch==wchar.init) ch=' ';
-    if (!(ch in buffer)) buffer[ch]=f.render(cast(char[])[ch], white);
-    if (!buffer[ch]) buffer[ch]=getChar('?');
-    if (!buffer[ch]) buffer[ch]=getChar('.');
-    return buffer[ch];
-  }
-  class GridTextField : Widget {
-    /// returns whether to re-call it (implies newline). Writes self into target.
-    /// _May_ change target.
-    // /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
-    /// ^+-This restriction stems from an earlier phase in development.
-    ///  +-It's not relevant anymore. Please ignore it.
-    TextGenerator[] gens;
-    int glyph_w, glyph_h; this(int w, int h) { glyph_w=w; glyph_h=h; }
-    wchar[][] screen_area; /// [line] [column]
-    void setRegion(Area target) {
-      size_t xsize=target.w/glyph_w;
-      screen_area=new wchar[][target.h/glyph_h]; foreach (inout line; screen_area) line=new wchar[xsize];
-      super.setRegion(target);
-    }
-    private wchar[][] eval(size_t xchars, size_t ychars) {
-      /// the last line each delegate has rendered.
-      int[typeof(gens[0])] lastlines;
-      /// [line] [column]
-      auto res=field(ychars, new wchar[xchars]);
-      auto work=res.dup;
-      size_t current=0;
-      foreach (gen; gens) {
-        bool recall=false;
-        bool initial=true;
-        do {
-          recall=gen(work[current], initial); /// render line into buffer
-          initial=false;
-          if (recall) { current++;}
-          else lastlines[gen]=current;
-          /// while the cursor is below the screen, expand the screen downwards.
-          while (current>=work.length) {
-            auto newline=new wchar[xchars];
-            work~=newline; res~=newline;
-          }
-        } while (recall);
-      }
-      return res[$-ychars..$];
-    }
-    void update() {
-      auto newScreen=eval(screen_area[0].length, screen_area.length);
-      foreach (line_nr, line; newScreen)
-        foreach (col_nr, ch; line)
-          if (ch != screen_area[line_nr][col_nr])
-            with (area) with (select(col_nr*glyph_w, line_nr*glyph_h, glyph_w, glyph_h)) {
-              clean; blit(getChar(ch));
-            }
-      screen_area=newScreen;
-    }
-    void draw() { update; } /// :sings: REDUNDANCY! F**K YEAH!
-  }
-  TTF_FontClass f;
-  this(void[] font, int size) { f=new TTF_FontClass(font, size); }
-}
-class Nothing : Widget { void draw (Area target) { } }
-
-int eatoi(char[] nr, int max) {
-  assert(nr.length);
-  if (nr[$-1]=='%') return cast(int)(max*atoi(nr[0..$-1]))/100;
-  return cast(int)atoi(nr);
-}
-
-template DefaultConstructor() { this(typeof(this.tupleof) t) { foreach (id, bogus; this.tupleof) this.tupleof[id]=cast(typeof(bogus))t[id]; } }
-
-import xml, std.string;
 class Frame : FrameWidget {
   FileSource fsrc;
   private {
@@ -219,10 +27,10 @@ class Frame : FrameWidget {
     }
     return buffer[name].buf;
   }
-  /// generate a SDL surface from an XML description
+  /// generate an SDL surface from an XML description
   private Generator generate(xmlElement thingie) {
     Generator res=null;
-    ifIs(thingie, (xmlText txt) { // triggers gdc bug \todo: reenable on .24
+    ifIs(thingie, (xmlText txt) {
       res=new class(fsrc, txt.data) Generator {
         FileSource fs; char[] filename; mixin DefaultConstructor;
         SDL_Surface *opCall(size_t xs, size_t ys) {
@@ -231,7 +39,7 @@ class Frame : FrameWidget {
         }
       };
     });
-    ifIs(thingie, (xmlTag tag) { // triggers a gdc bug \todo: reenable on .24
+    ifIs(thingie, (xmlTag tag) {
       assert(tag.children.length==1, "Invalid children length in "~tag.toString);
       switch (tag.name) {
         ///\todo: Fixed-shifting case!

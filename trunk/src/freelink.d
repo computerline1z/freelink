@@ -3,7 +3,7 @@ import computer, file, nls;
 import std.stdio, std.file;
 version(Windows) import std.c.windows.windows: Sleep;
 import std.thread: Thread;
-import SDL, gui, xml;
+import SDL, gui.base, gui.frame, gui.text, xml;
 
 import std.bind;
 TextGenerator WriteGridLine(wchar[] text) {
