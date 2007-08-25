@@ -67,42 +67,48 @@ import png;
 void main ()
 {
   SDL_EnableUNICODE=true;
-  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32, SDL_HWSURFACE | SDL_ANYFORMAT);
+  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32,
+                                          SDL_HWSURFACE | SDL_ANYFORMAT);
 
-  writefln (nl("freelink"));
-  writefln ("Switching to German");
-  setLanguage ("German".dup);
-  writefln (nl("freelink"));
-  writefln ("Switching to default");
+  writefln(nl("freelink"));
+  writefln("Switching to German");
+  setLanguage("German".dup);
+  writefln(nl("freelink"));
+  writefln("Switching to default");
   setLanguage;
-  File f = new File (1, "Test.txt".dup, 3, 0, false);
-  Computer x = new Computer (0, "Localhost".dup);
-  writefln (x.name);
-  writefln (f.name);
-  writefln ("Available space: ", x.space.available);
+  File f = new File(1, "Test.txt".dup, 3, 0, false);
+  Computer x = new Computer(0, "Localhost".dup);
+  writefln(x.name);
+  writefln(f.name);
+  writefln("Available space: ", x.space.available);
 
-  //Window testWindow = new Window ("Test".dup);
-  auto fsrc=new FileSource(".."~sep~"gfx");
-  auto stdframe=cast(xmlTag)parse(read(".."~sep~"gfx"~sep~"std-frame.xml")).children[0];
-  auto frame=new Frame(fsrc, stdframe, null);
-  auto font=new Font(read("cour.ttf"), 20);
-  auto myGrid=font.new GridTextField(12, 20);
+  //Window testWindow = new Window("Test".dup);
+  auto fsrc = new FileSource(".." ~ sep ~ "gfx");
+  auto stdframe = cast(xmlTag)parse(read(".." ~ sep ~ "gfx"
+                                       ~ sep ~ "std-frame.xml")).children[0];
+  auto frame = new Frame(fsrc, stdframe, null);
+  auto font = new Font(read("cour.ttf"), 20);
+  auto myGrid = font.new GridTextField(12, 20);
   void GotLine(wchar[] text) {
     with (myGrid) {
-      gens~=gens[$-1];
-      gens[$-2]=WriteGridLine("> "~text);
+      gens ~= gens[$-1];
+      gens[$-2] = WriteGridLine("> " ~ text);
     }
   }
-  myGrid.gens~=[WriteGridLine("Hello World"), WriteGridLine(" --Foobar-- "), Cursor(&GotLine)];
+  myGrid.gens ~= [WriteGridLine("Hello World"),
+                  WriteGridLine(" --Foobar-- "), Cursor(&GotLine)];
 
-  //frame.below=new Stack(32, true, font.new TextLine("AVL FOOBAR whEEzle".dup), font.new TextLine("AVL FOOBAR whEEzle".dup, true), myGrid);
-  frame.below=myGrid;
+  //frame.below = new Stack(32, true,
+  //                        font.new TextLine("AVL FOOBAR whEEzle".dup),
+  //                        font.new TextLine("AVL FOOBAR whEEzle".dup, true),
+  //                        myGrid);
+  frame.below = myGrid;
 
   SDL_Event event;
   bool running = true;
-  size_t count=0;
-  auto start=getUTCtime()/1000;
-  auto current=start;
+  size_t count = 0;
+  auto start = getUTCtime() / 1000;
+  auto current = start;
   bool[SDLKey] handled;
   SDL_FillRect(screen, null, 0);
   frame.setRegion(Area(screen));
@@ -110,15 +116,18 @@ void main ()
     while (SDL_PollEvent (&event)) {
       switch (event.type) {
         case SDL_EventType.SDL_KEYDOWN:
-          auto key=event.key.keysym;
-          if ((!(key.sym in handled))&&KeyHandler) { KeyHandler(key); handled[key.sym]=true; }
+          auto key = event.key.keysym;
+          if ((!(key.sym in handled)) && KeyHandler) {
+            KeyHandler(key);
+            handled[key.sym] = true;
+          }
           break;
         case SDL_EventType.SDL_KEYUP:
           auto key=event.key.keysym.sym;
           handled.remove(key);
           writefln ("which key? ", key);
-          /*if (event.key.keysym.sym == SDLKey.SDLK_q)
-            running = false;*/
+          //if (event.key.keysym.sym == SDLKey.SDLK_q)
+          //  running = false;
           break;
         case SDL_EventType.SDL_QUIT:
           running = false;
@@ -132,9 +141,9 @@ void main ()
     //Sleep(10);
     Thread.yield;
     ++count;
-    if (current!=(getUTCtime/1000)) {
-      current=getUTCtime/1000;
-      writefln("FPS: ", (cast(float)count)/(cast(float)(current-start)));
+    if (current != (getUTCtime / 1000)) {
+      current = getUTCtime / 1000;
+      writefln("FPS: ", (cast(float)count) / (cast(float)(current - start)));
     }
   }
 }
