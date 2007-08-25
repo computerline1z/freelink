@@ -1,6 +1,6 @@
 module tools.iter;
 import tools.base;
-public import tools.base: elemType;
+public import tools.base: ElemType;
 import std.traits;
 /// functional extensions
 
@@ -14,7 +14,7 @@ class Iterator(T) {
     return 0;
   }
   bool opEquals(U)(U cmp) {
-    static if (isArray!(U)) return opEquals(new ArrayIterator!(elemType!(U))(cmp));
+    static if (isArray!(U)) return opEquals(new ArrayIterator!(ElemType!(U))(cmp));
     else {
       static assert(is(typeof(&cmp.next)==delegate), "Error: cmp doesn't appear to be an iterator");
       while (true) {
@@ -48,10 +48,10 @@ struct toArray {
 }
 
 struct reverse {
-  static Iterator!(T.IterType) opCat_r(T)(T iter) {
+  static Iterator!(ElemType!(T)) opCat_r(T)(T iter) {
     auto array=iter~toArray;
     foreach (id, ref entry; array[0..$/2]) swap(entry, array[$-1-id]);
-    return new ArrayIterator!(elemType!(typeof(array)))(array);
+    return new ArrayIterator!(ElemType!(typeof(array)))(array);
   }
 }
 
@@ -63,22 +63,14 @@ template ExpandSimplifiedReduce(char[] CODE, char[] VAR1, char[] VAR2) {
   const ExpandSimplifiedReduce=Replace!(Replace!(CODE, "__", VAR2), "_", VAR1);
 }
 
-template PatchIter(char[] M, T) {
-  static if(isArray!(T)) {
-    const char[] PatchIter=
-      Replace!(M[0..FindOr!(M, ")", 0)], "V.IterType", "elemType!(V)")~M[FindOr!(M, ")", 0)..$];
-  } else const char[] PatchIter=M;
-  
-}
-
 template GenericChain(alias IterClass, char[] StoredValue) {
-  IterClass!(typeof(mixin(PatchIter!(StoredValue, V)))) opCat_r(V)(V iter) {
+  IterClass!(typeof(mixin(StoredValue))) opCat_r(V)(V iter) {
     static if(isArray!(V)) {
-      return new IterClass!(typeof(mixin(PatchIter!(StoredValue, V))))
-        (iterate(iter), mixin(PatchIter!(StoredValue, V)));
+      return new IterClass!(typeof(mixin(StoredValue)))
+        (iterate(iter), mixin(StoredValue));
     } else {
-      return new IterClass!(typeof(mixin(PatchIter!(StoredValue, V))))
-        (iter, mixin(PatchIter!(StoredValue, V)));
+      return new IterClass!(typeof(mixin(StoredValue)))
+        (iter, mixin(StoredValue));
     }
   }
 }
@@ -88,7 +80,7 @@ struct _map(C) {
   mixin GenericChain!(MapIterator, "callable");
 }
 struct _map(char[] CODE) {
-  private const char[] fn="function(V.IterType MapHiddenParameter) { "~ExpandSimplifiedFunc!(CODE, "MapHiddenParameter")~"; }";
+  private const char[] fn="function(ElemType!(V) MapHiddenParameter) { "~ExpandSimplifiedFunc!(CODE, "MapHiddenParameter")~"; }";
   mixin GenericChain!(MapIterator, fn);
 }
 _map!(CODE) maps(char[] CODE)() { _map!(CODE) e; return e; }
@@ -109,7 +101,7 @@ struct _filter(C) {
   mixin GenericChain!(FilterIterator, "callable");
 }
 struct _filter(char[] CODE) {
-  private const char[] fn="function(V.IterType FilterHiddenParameter) { "~ExpandSimplifiedFunc!(CODE, "FilterHiddenParameter")~"; }";
+  private const char[] fn="function(ElemType!(V) FilterHiddenParameter) { "~ExpandSimplifiedFunc!(CODE, "FilterHiddenParameter")~"; }";
   mixin GenericChain!(FilterIterator, fn);
 }
 _filter!(CODE) filters(char[] CODE)() { _filter!(CODE) e; return e; }
@@ -156,6 +148,11 @@ class ConcatIterator(T) : NestedIterator!(T.IterType, T.IterType) {
   }
 }
 
+template IfElse(bool A, B, C) {
+  static if(A) alias B IfElse;
+  else alias C IfElse;
+}
+
 struct _reduce(C) {
   C callable;
   static assert(ParameterTypeTuple!(C).length==2);
@@ -172,12 +169,14 @@ struct _reduce(C) {
   }
 }
 struct _reduce(char[] CODE) {
-  private const char[] fn="function(ref V.IterType RedChangeP, V.IterType RedSrcP) { "~
+  private const char[] fn="function(ref ElemType!(V) RedChangeP, ElemType!(V) RedSrcP) { "~
     ExpandSimplifiedReduce!(CODE, "RedChangeP", "RedSrcP")~"; }";
-  V.IterType opCat_r(V)(V iter) {
-    V.IterType res;
-    typeof(res) next=void;
-    while (iter.next(next)) mixin(fn~"(res, next);");
+  ElemType!(V) opCat_r(V)(V _iter) {
+    static if(isArray!(V)) auto iter=iterate(_iter);
+    else auto iter=_iter;
+    ElemType!(V) res;
+    typeof(res) n=void;
+    while (iter.next(n)) mixin(fn~"(res, n);");
     return res;
   }
 }

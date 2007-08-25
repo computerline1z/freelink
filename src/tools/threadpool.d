@@ -5,6 +5,17 @@ public import tools.iter;
 import std.thread;
 import std.c.time: csleep=sleep;
 class ThreadPool {
+  class CountTo {
+    size_t target;
+    size_t[] counts; // one entry for each Thread in myThreads
+    this(size_t to) { target=to; counts.length=myThreads.length; }
+    void inc() {
+      auto thr=Thread.getThis;
+      foreach (id, t; myThreads) if (t is thr) { counts[id]++; return; }
+      throw new Exception("CountTo used from thread that's not in pool!");
+    }
+    size_t remaining() { return target-(counts~reduces!("_+=__")); }
+  }
   private Thread[] myThreads;
   Thread mainThread=null;
   void delegate()[] tasks;
