@@ -164,8 +164,7 @@ struct _reduce(C) {
   static assert(is(Type==ParameterTypeTuple!(C)[1]));
   Type opCat_r(T)(T thing) {
     static if(isArray!(T)) return opCat_r(iterate(array)); else {
-      Type res=void;
-      if (!thing.next(res)) throw new Exception("Stream too short to reduce further");
+      Type res;
       Type next=void;
       while (thing.next(next)) callable(res, next);
       return res;
@@ -176,8 +175,7 @@ struct _reduce(char[] CODE) {
   private const char[] fn="function(ref V.IterType RedChangeP, V.IterType RedSrcP) { "~
     ExpandSimplifiedReduce!(CODE, "RedChangeP", "RedSrcP")~"; }";
   V.IterType opCat_r(V)(V iter) {
-    V.IterType res=void;
-    if (!iter.next(res)) throw new Exception("Stream too short to further reduce");
+    V.IterType res;
     typeof(res) next=void;
     while (iter.next(next)) mixin(fn~"(res, next);");
     return res;
