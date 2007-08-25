@@ -8,7 +8,7 @@ all: freelink
 resolve_imports:
 
 freelink: $(subst .d,.o,$(shell find -iname "*.d"))
-	$(DC) $(OBJECTS)*.o -o freelink $(LDFLAGS)
+	$(DC) $(OBJECTS)*.o -o freelink $(LFLAGS)
 
 %.o: %.d
 	mkdir -p $(OBJECTS)
