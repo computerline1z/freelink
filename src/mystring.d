@@ -8,8 +8,8 @@ int find(T, U)(T string, U match) {
 }
 
 template StdStringAlias(T...) {
-  static if (T.length>1)
+  static if (T.length > 1)
     mixin StdStringAlias!(T[1..$]);
-  mixin("alias std.string."~T[0]~" "~T[0]~"; ");
+  mixin("alias std.string." ~ T[0] ~ " " ~ T[0] ~ "; ");
 }
 mixin StdStringAlias!("split", "join");

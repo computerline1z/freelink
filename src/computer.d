@@ -13,15 +13,12 @@ class Computer
   FileSystem fs;
 
   final class Space {
-    kquad max () { return drives~maps!("_.space")~reduces!("_+=__"); }
+    kquad max () {
+      return drives ~ maps!("_.space") ~ reduces!("_ += __"); }
     /*kquad x; foreach (d; drives) x += d.space; return x;
     }*/
-    kquad used () {
-      return fs.used;
-    }
-    kquad available () {
-      return max - used;
-    }
+    kquad used () { return fs.used; }
+    kquad available () { return max - used; }
   }
   Space space;
 
