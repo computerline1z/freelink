@@ -5,7 +5,8 @@ template Tuple(T...) { alias T Tuple; }
 template isArray(T) { const bool isArray=false; }
 template isArray(T: T[]) { const bool isArray=true; }
 
-template elemType(T: T[]) { alias T elemType; }
+template ElemType(T: T[]) { alias T ElemType; }
+template ElemType(T) { alias T.IterType ElemType; }
 
 template apply(alias S, T...) {
   static if(T.length) alias Tuple!(S!(T[0]), apply!(S, T[1..$])) apply;
