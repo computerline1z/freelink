@@ -1,5 +1,5 @@
 module gui.text;
-import gui.base, tools.base;
+import gui.base, tools.base, tools.ext;
 import contrib.SDL, contrib.SDL_ttf;
 
 class Font {

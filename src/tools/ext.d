@@ -110,23 +110,6 @@ R mustBe(R, C)(Object obj, R delegate(C) dg) {
   return ifIs(obj, dg, () { throw new Exception("mustBe: cast to "~C.stringof~" failed!"); return R.init; });
 }
 
-T[] times(T, U)(T[] source, U _count) {
-  static assert(is(U: size_t));
-  size_t count=_count;
-  auto res=new T[source.length*count];
-  while (count--) res[count*source.length..(count+1)*source.length]=source;
-  return res;
-}
-
-T[] field(T)(size_t count, lazy T generate) {
-  assert(!is(T==void));
-  // avoid array initialization to default values (that's why it's not new void[count])
-  auto res=(cast(T*)(new void[count*T.sizeof]).ptr)[0..count];
-  assert(res.length==count, "Sanity failed: redetermine length manually");
-  foreach (inout v; res) v=generate();
-  return res;
-}
-
 struct _fix(T...) {
   T what;
   R delegate(P[T.length..$]) opCat_r(R, P...)(R delegate(P) dg) {
@@ -139,6 +122,17 @@ struct _fix(T...) {
   }
 }
 _fix!(T) fix(T...)(T v) { return _fix!(T)(v); }
+
+void New(S, T...)(ref S obj, T v) { obj=new S(v); }
+
+T[] field(T)(size_t count, lazy T generate) {
+  assert(!is(T==void));
+  // avoid array initialization to default values (that's why it's not new void[count])
+  auto res=(cast(T*)(new void[count*T.sizeof]).ptr)[0..count];
+  assert(res.length==count, "Sanity failed: redetermine length manually");
+  foreach (inout v; res) v=generate();
+  return res;
+}
 
 import tools.tests;
 unittest {
