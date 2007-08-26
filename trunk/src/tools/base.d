@@ -13,23 +13,6 @@ template apply(alias S, T...) {
   else alias Tuple!() apply;
 }
 
-T[] times(T, U)(T[] source, U _count) {
-  static assert(is(U: size_t));
-  size_t count=_count;
-  auto res=new T[source.length*count];
-  while (count--) res[count*source.length..(count+1)*source.length]=source;
-  return res;
-}
-
-T[] field(T)(size_t count, lazy T generate) {
-  assert(!is(T==void));
-  // avoid array initialization to default values (that's why it's not new void[count])
-  auto res=(cast(T*)(new void[count*T.sizeof]).ptr)[0..count];
-  assert(res.length==count, "Sanity failed: redetermine length manually");
-  foreach (inout v; res) v=generate();
-  return res;
-}
-
 void swap(T)(ref T a, ref T b) { T c=a; a=b; b=c; }
 
 template Pair(T) { alias Tuple!(T, T) Pair; }
@@ -55,3 +38,13 @@ template RInsert(char[] SRC, char[] WHERE, char[] WITH) {
 }
 
 T min(T, U)(T a, U b) { return a<b?a:cast(T)b; }
+
+class AxiomaticException : Exception { this(char[] msg) { super("!!!!Basic axiom violated: "~msg); } }
+
+T[] times(T, U)(T[] source, U _count) {
+  static assert(is(U: size_t));
+  size_t count=_count;
+  auto res=new T[source.length*count];
+  while (count--) res[count*source.length..(count+1)*source.length]=source;
+  return res;
+}

@@ -5,22 +5,12 @@ version(Windows) import std.c.windows.windows: Sleep;
 import std.thread: Thread;
 import contrib.SDL, gui.base, gui.frame, gui.text, xml;
 
-import std.bind;
-TextGenerator WriteGridLine(wchar[] text) {
-  struct holder { wchar[] text;
-    bool call(ref wchar[] target, bool reset) {
-      assert(text.length<=target.length);
-      if (!reset) return false; /// One line should be enough for anybody!
-      target[0..text.length]=text;
-      return true; /// Re-call for newline
-    }
-  }
-  auto foo=new holder; foo.text=text; return &foo.call;
-}
-
 import tools.iter;
 bool writeOn(ref wchar[] target, ref size_t offset, wchar[][] text...) {
-  if (offset==size_t.max) return false; /// Ensure the final newline
+  if (offset==size_t.max) {
+    offset=0;
+    return false; /// Ensure the final newline
+  }
   wchar[] str=(iterate(text)~reduces!("_~=__"))[offset..$];
   if (str.length>target.length) {
     target[0..$]=str[0..target.length];
@@ -33,13 +23,22 @@ bool writeOn(ref wchar[] target, ref size_t offset, wchar[][] text...) {
   }
 }
 
+TextGenerator WriteGrid(wchar[] text) {
+  struct holder {
+    wchar[] text;
+    size_t offset=0;
+    bool call(ref wchar[] target, bool reset) { return writeOn(target, offset, text); }
+  }
+  auto foo=new holder; foo.text=text; return &foo.call;
+}
+
 bool between(T)(T v, T lower, T upper) { return (v>=lower)&&(v<upper); }
 
 import std.date:getUTCtime;
-class Cursor {
+class Prompt {
   long ms;
   wchar[] inbuffer; wchar[] line; size_t offset; void delegate(wchar[]) lineCB;
-  bool show=true;
+  bool show=false;
   /// Process the input buffer
   void push() {
     // only clear the buffer if show is set
@@ -62,6 +61,7 @@ class Cursor {
     if (show) return writeOn(target, offset, "> "w, line, blink?"_"w:" "w);
     else return writeOn(target, offset, blink?"_"w:" "w);
   }
+  TextGenerator toStatic() { return WriteGrid("> "~line); }
   void handle(SDL_keysym sym) {
     if (between(cast(int)sym.sym, 32, 128)) {
       inbuffer~=sym.unicode;
@@ -79,14 +79,62 @@ class Cursor {
 
 void delegate(SDL_keysym) KeyHandler=null;
 
+import tools.threads, tools.ext, std.utf, std.string, std.stdio: format;
+class TTY {
+  Prompt p;
+  Font.GridTextField field;
+  DifferentThreadsBlock!(2) dtb;
+  MessageChannel!(wchar[]) InputText;
+  this(Font.GridTextField f) {
+    field=f;
+    New(p, &GotLine);
+    New(dtb, "TTY DTB");
+    New(InputText);
+    f.gens~=&p.generate;
+  }
+  const int MainThread=0; const int OSThread=1;
+  private void GotLine(wchar[] what) {
+    dtb in MainThread; /// called from main thread
+    if (!p.show) throw new AxiomaticException("Received input line but not in input mode");
+    p.show=false;
+    InputText.put(what);
+  }
+  wchar[] readln() {
+    scope(failure) writefln("!readln");
+    dtb in OSThread;
+    if (p.show) throw new AxiomaticException("Tried to read line while already reading line; confused now.");
+    p.show=true;
+    auto res=InputText.get;
+    with (field) {
+      gens ~= gens[$-1];
+      gens[$-2] = p.toStatic;
+    }
+    return res;
+    
+  }
+  void write(wchar[] t) {
+    scope(failure) writefln("!write");
+    dtb in OSThread;
+    if (p.show) throw new Exception("Trying to print to console while waiting for input: your threads are messed up");
+    with (field) {
+      gens ~= gens[$-1];
+      gens[$-2] = WriteGrid(t);
+    }
+  }
+  void writefln(T...)(T t) { write(format("", replace(t, "%", "%%")).toUTF16()); }
+  void push() { p.push; }
+}
+
 import png;
 import std.c.time: sleep;
 import tools.threadpool, tools.ext;
+import std.process;
+static import std.stream;
 void main ()
 {
-  auto p=new ThreadPool(1);
+  auto pool=new ThreadPool(1);
   SDL_EnableUNICODE=true;
-  SDL_Surface *screen = SDL_SetVideoMode (640, 480, 32,
+  SDL_Surface *screen = SDL_SetVideoMode (800, 600, 32,
                                           SDL_HWSURFACE | SDL_ANYFORMAT);
 
   writefln(nl("freelink"));
@@ -108,24 +156,15 @@ void main ()
   auto frame = new Frame(fsrc, stdframe, null);
   auto font = new Font(read("cour.ttf"), 20);
   auto myGrid = font.new GridTextField(12, 24);
-  Cursor cursor=void;
-  void GotLine(wchar[] text) {
-    with (myGrid) {
-      gens ~= gens[$-1]; // dup cursor on end
-      gens[$-2] = WriteGridLine("> " ~ text); // and freeze previous pos
+  auto t=new TTY(myGrid);
+  pool.addTask({
+    while (true) {
+      auto inp=t.readln;
+      system((inp~" 2>>tmp >> tmp").toUTF8()); // "
+      foreach (result; (cast(char[])read("tmp")).split("\n")) t.writefln(result);
+      system("rm tmp"); 
     }
-    cursor.show=false;
-    // actual callback goes here
-    // placeholder that just waits 2s
-    p.addTask((Cursor cursor) {
-      auto start=getUTCtime();
-      while (getUTCtime()-start<1000) { }
-      cursor.show=true;
-    }~fix(cursor));
-  }
-  cursor=new Cursor(&GotLine);
-  myGrid.gens ~= [WriteGridLine("Hello World"),
-                  WriteGridLine(" --Foobar-- "), &cursor.generate];
+  });
   
   frame.below = myGrid;
 
@@ -160,7 +199,7 @@ void main ()
           break;
       }
     }
-    cursor.push;
+    t.push;
     //frame.draw(Area(screen));
     frame.update;
     SDL_Flip(screen);
