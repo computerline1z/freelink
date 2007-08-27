@@ -46,6 +46,7 @@ class Prompt {
         switch (inbuffer[0]) {
           case 8: if (line.length) line=(curpos?line[0..curpos-1]:"")~line[curpos..$]; if (curpos) --curpos; break; /// backspace
           case 13: lineCB(line); line=""; curpos=0; break; /// CR
+          case 127: if (line.length) line=line[0..curpos]~((curpos<line.length)?line[curpos+1..$]:""w); break;
           case 275: if (curpos<line.length) ++curpos; break; /// arrow right
           case 276: if (curpos) --curpos; break; /// arrow left
           default: line=line[0..curpos]~inbuffer[0]~line[curpos..$]; ++curpos; break;
@@ -70,7 +71,7 @@ class Prompt {
       inbuffer~=sym.unicode;
       writefln("Added character ", cast(ubyte[])[sym.unicode], " == ", sym.unicode);
     } else switch (cast(int)sym.sym) {
-      case 8, 13, 275, 276: inbuffer~=cast(wchar)sym.sym; break;
+      case 8, 13, 127, 275, 276: inbuffer~=cast(wchar)sym.sym; break;
       default: writefln("Strange sym: ", sym.sym, " which is '", sym.unicode, "'");
     }
   }
