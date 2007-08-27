@@ -7,7 +7,7 @@ interface xmlElement { char[] toString(); };
 class xmlText : xmlElement {
   final char[] data;
   this(char[] whut) { data = whut; }
-  char[] toString() { return "\"" ~ data ~ "\""; } // quoted string
+  char[] toString() { return quote(data); }
 }
 
 class xmlTag : xmlElement {
@@ -17,7 +17,7 @@ class xmlTag : xmlElement {
   char[] toString() {
     char[] res = "<" ~ name;
     /// quoted strings
-    foreach (id, text; attributes) res ~= " [" ~ id ~ "]=\"" ~ text ~ "\"";
+    foreach (id, text; attributes) res ~= " [" ~ id ~ "]=" ~ text.quote();
     res ~= ">";
     foreach (elem; children) res ~= elem.toString;
     res ~= "</" ~ name ~ ">";
