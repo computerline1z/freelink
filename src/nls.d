@@ -8,10 +8,6 @@ static this() {
   auto lines = (cast(char[])read("nls" ~ sep ~ "default.txt")).split("\n")
     ~ maps!("if (_.length && (_[$-1] == '\\r')) return _[0..$-1]; _") // remove trailing \r
     ~ toArray;
-  /*auto lines = map(
-      split(cast(char[])read("nls" ~ sep ~ "default.txt"), "\n") // split into lines
-      (char[] c) { if (c.length&&(c[$-1]=='\r')) c=c[0..$-1]; return c; } // remove trailing \r
-  );*/
   foreach (line; lines) {
     if (!line.length) continue;
     // begin of a new language section

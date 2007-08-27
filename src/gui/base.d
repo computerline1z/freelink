@@ -61,7 +61,8 @@ class FrameWidget : ContainerWidget {
 
 interface Generator { SDL_Surface *opCall(size_t xs, size_t ys); }
 
-alias bool delegate(ref wchar[], bool reset) TextGenerator;
+/// Writes self on _1. If reset=true, restarts from scratch. Returns whether it needs another line.
+alias bool delegate(wchar[], bool reset) TextGenerator;
 
 class Nothing : Widget { void draw(Area target) { } }
 
