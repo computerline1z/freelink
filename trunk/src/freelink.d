@@ -1,6 +1,6 @@
 module freelink;
 import std.file, std.stdio, std.thread, std.c.time: sleep;
-import SDL, gui.all, nls, file, computer, xml;
+import contrib.SDL, gui.all, nls, file, computer, xml;
 
 bool writeOn(wchar[] target, ref size_t offset, wchar[][] text...) {
   if (offset==size_t.max) {
