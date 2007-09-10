@@ -56,7 +56,7 @@ class FrameWidget : ContainerWidget {
   private Widget _below;
   void below (Widget w) { _below = w; }
   Widget below () { return _below; }
-  void update() { below.update; }
+  void update() { assert(below); below.update; }
 }
 
 interface Generator { SDL_Surface *opCall(size_t xs, size_t ys); }
