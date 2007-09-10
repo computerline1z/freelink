@@ -3,6 +3,11 @@ module contrib.SDL;
 SDL_Color white={255, 255, 255, 0};
 SDL_Color black={0, 0, 0, 0};
 
+static this() { SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO); }
+static ~this() { SDL_Quit; }
+
+void delegate(SDL_keysym) KeyHandler=null;
+
 extern (C) :
 struct SDL_ActiveEvent { ubyte type, gain, state; }
 struct SDL_KeyboardEvent { ubyte type, which, state; SDL_keysym keysym; }
@@ -521,6 +526,3 @@ struct SDL_Cursor {
 }
 void *SDL_SetCursor(SDL_Cursor *);
 SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, SDL_PixelFormat *fmt, uint flags);
-
-static this() { SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO); }
-static ~this() { SDL_Quit; }

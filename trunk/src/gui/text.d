@@ -1,7 +1,9 @@
 module gui.text;
-import gui.base, tools.base, tools.ext;
+import tools.base, tools.ext;
+public import gui.base;
 import contrib.SDL, contrib.SDL_ttf;
 
+import std.random;
 class Font {
   SDL_Surface*[wchar] buffer;
   ~this() { foreach (surf; buffer) SDL_FreeSurface(surf); }
@@ -57,8 +59,8 @@ class Font {
       foreach (line_nr, line; newScreen)
         foreach (col_nr, ch; line)
           if (ch != screen_area[line_nr][col_nr])
-            with (area) with (select(col_nr * glyph_w,
-                              line_nr * glyph_h, glyph_w, glyph_h)) {
+            with (area) with (select(col_nr * glyph_w+rand%3,
+                              line_nr * glyph_h+rand%3, glyph_w, glyph_h)) {
                                 clean; blit(getChar(ch));
                               }
       screen_area = newScreen;
@@ -67,4 +69,29 @@ class Font {
   }
   TTF_FontClass f;
   this(void[] font, int size) { f = new TTF_FontClass(font, size); }
+}
+
+bool writeOn(wchar[] target, ref size_t offset, wchar[][] text...) {
+  if (offset==size_t.max) {
+    return false; /// Ensure the final newline
+  }
+  wchar[] str=(iterate(text)~reduces!("_~=__"))[offset..$];
+  if (str.length>target.length) {
+    target[0..$]=str[0..target.length];
+    offset+=target.length;
+    return true;
+  } else {
+    target[0..str.length]=str;
+    offset=size_t.max; /// last newline
+    return true;
+  }
+}
+
+TextGenerator WriteGrid(wchar[] text) {
+  struct holder {
+    wchar[] text;
+    size_t offset;
+    bool call(wchar[] target, bool reset) { if (reset) offset=0; return writeOn(target, offset, text); }
+  }
+  auto foo=new holder; foo.text=text; return &foo.call;
 }
