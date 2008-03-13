@@ -1,6 +1,6 @@
 module gui.frame;
 import gui.base;
-import xml, std.string, contrib.SDL, tools.ext, png;
+import xml, std.string, std.stdio, contrib.SDL, png, tools.functional;
 
 class Frame : FrameWidget {
   FileSource fsrc;
@@ -30,7 +30,7 @@ class Frame : FrameWidget {
   /// generate an SDL surface from an XML description
   private Generator generate(xmlElement thingie) {
     Generator res = null;
-    ifIs(thingie, (xmlText txt) {
+    if (auto txt=cast(xmlText) thingie) {
       res = new class(fsrc, txt.data) Generator {
         FileSource fs; char[] filename; mixin DefaultConstructor;
         SDL_Surface *opCall(size_t xs, size_t ys) {
@@ -40,8 +40,8 @@ class Frame : FrameWidget {
           return decode(fs.getFile(filename));
         }
       };
-    });
-    ifIs(thingie, (xmlTag tag) {
+    }
+    if (auto tag=cast(xmlTag) thingie) {
       assert(tag.children.length == 1,
              "Invalid children length in " ~ tag.toString);
       switch (tag.name) {
@@ -95,7 +95,7 @@ class Frame : FrameWidget {
           // rectangle strings
           //char[][] r_str = map(split(tag.attributes["from"], ",")~split(tag.attributes["to"], ","), member!(string, "dup"));
           char[][] r_str = (tag.attributes["from"].split(",")~tag.attributes["to"].split(","))
-            ~maps!("_.dup")~toArray;
+            /map/ expr!("$.dup");
           foreach (ref text; r_str) text = strip(text).dup;
           assert(r_str.length == 4);
           res = new class(generate(tag.children[0]), r_str) Generator {
@@ -162,7 +162,7 @@ class Frame : FrameWidget {
           break;
         default: assert(false, "Unknown mode: " ~ tag.name);
       }
-    });
+    }
     assert(res); return res;
   }
   /// constructor
@@ -173,22 +173,23 @@ class Frame : FrameWidget {
     xmlElement[char[]] entries;
     char[][char[]] modestr;
     foreach (_ch; frame.children) {
-      ifIs(_ch, (xmlTag ch) {
+      if (auto ch=cast(xmlTag) _ch) {
         assert(ch.children.length == 1,
                "Invalid number of children in " ~ ch.toString);
         assert(!(ch.name in entries));
         entries[ch.name] = ch.children[0];
         if ("mode" in ch.attributes) modestr[ch.name] = ch.attributes["mode"];
-      });
+      }
     }
     // extract the SDL surfaces for the stuffies
     foreach (name, tree; entries) parts[name] = generate(tree);
   }
   void setRegion(Area region) {
     auto tlw = getSurf("top-left").w; auto tlh = getSurf("top-left").h;
+    auto bottom_right=getSurf("bottom-right");
     with (area = region)
-      below.setRegion(select(tlw, tlh, w - tlw - getSurf("bottom-right").w,
-                             h - tlh - getSurf("bottom-right").h));
+      below.setRegion(select(tlw, tlh, w - tlw - bottom_right.w,
+                             h - tlh - bottom_right.h));
     draw;
   }
   void draw() {

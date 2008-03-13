@@ -1,6 +1,6 @@
 module file;
 import std.string, hardware;
-import tools.base, tools.mrv;
+import tools.functional;
 
 class File {
   IP sourceIP;
@@ -8,23 +8,20 @@ class File {
   kquad size;
   ubyte encryptionLevel;
   bool runnable;
-  this (Tuple!(IP, char[], kquad, ubyte, bool) v) {
-    vars(this.tupleof) = list(v);
-  }
+  mixin This!("sourceIP, name, size, encryptionLevel, runnable");
 }
 
-import tools.iter;
 class FileSystem {
   File[] files;
 
   kquad used () {
     if (!files.length) return 0;
-    return files ~ maps!("_.size") ~ reduces!("_ += __");
+    return files /map/ expr!("$.size") /reduce(cast(kquad) 0)/ expr!("$+$2");
   }
   File[] binary () {
-    return files ~ filters!("_.runnable && !_.encryptionLevel") ~ toArray;
+    return files /select/ expr!("$.runnable && !$.encryptionLevel");
   }
   File[] data () {
-    return files ~ filters!("!_.runnable") ~ toArray;
+    return files /select/ expr!("!$.runnable");
   }
 }

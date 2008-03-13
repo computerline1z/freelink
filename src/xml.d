@@ -1,13 +1,13 @@
 module xml;
 
-import mystring, tools.ext;
+import mystring, tools.functional;
 
 interface xmlElement { char[] toString(); };
 
 class xmlText : xmlElement {
   final char[] data;
   this(char[] whut) { data = whut; }
-  char[] toString() { return quote(data); }
+  char[] toString() { return '"'~data~'"'; }
 }
 
 class xmlTag : xmlElement {
@@ -17,7 +17,7 @@ class xmlTag : xmlElement {
   char[] toString() {
     char[] res = "<" ~ name;
     /// quoted strings
-    foreach (id, text; attributes) res ~= " [" ~ id ~ "]=" ~ text.quote();
+    foreach (id, text; attributes) res ~= " [" ~ id ~ "]=" ~ '"'~text~'"';
     res ~= ">";
     foreach (elem; children) res ~= elem.toString;
     res ~= "</" ~ name ~ ">";
@@ -30,12 +30,11 @@ xmlTag parse(char[] xml) {
   /// generate a flat list first
   xmlElement[] list;
   void addText(char[] c) {
-    void addInstead() { list ~= new xmlText(c); }
     if (list.length)
-      ifIs(list[$ - 1], (xmlText t) { list[$ - 1] = new xmlText(t.data ~ c); },
-           &addInstead);
+      if (auto t=cast(xmlText) list[$-1]) list[$ - 1] = new xmlText(t.data ~ c);
+      else list ~= new xmlText(c);
     else
-      addInstead;
+      list ~= new xmlText(c);
   }
   size_t nextTag = xml.find("<");
   while (nextTag != -1) {
@@ -67,12 +66,7 @@ xmlTag parse(char[] xml) {
     auto newtag=new xmlTag;
     with (newtag) {
       name=parts[0];
-      foreach (pair;
-        parts[1..$] ~ map((char[] c) {
-          auto sp = c.split("="); return [sp[0], sp[1..$].join("=")].dup;
-        })) {
-        attributes[pair[0]] = pair[1].dup;
-      }
+      foreach (pair; parts[1..$] /map/ (&splitOff /reverse /curry)("=")) attributes[pair._0] = pair._1.dup;
     }
     list ~= newtag;
     xml = xml[endTag + 1..$];
@@ -80,16 +74,16 @@ xmlTag parse(char[] xml) {
   }
   list ~= new xmlText(xml);
   /// filter practically empty tags
-  list = list ~ filter((xmlElement e) { bool keep = true;
-                         ifIs(e, (xmlText tx) {
-                           keep = false;
-                           if (tx.data.length)
-                             foreach (ch; tx.data)
-                               if (ch != ' ' && ch!='\n' && ch!='\r') {
-                                 keep = true; break;
-                               }
-                         });
-                      return keep; }) ~ toArray;
+  list = list /select/ (xmlElement e) {
+    bool keep = true;
+    if (auto tx = cast(xmlText) e) {
+      if (tx.data.length)
+        foreach (ch; tx.data)
+          if (ch != ' ' && ch != '\n' && ch != '\r')
+            return true;
+      return false;
+    } else return true;
+  };
   /// okay now
   /// while there's still unprocessed tags in the list
   /// take them, and recurse
