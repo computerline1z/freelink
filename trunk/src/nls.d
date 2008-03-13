@@ -1,13 +1,12 @@
 module nls;
-import std.utf, std.file, mystring, tools.iter, std.path: sep;
+import std.utf, std.file, mystring, tools.functional, std.path: sep;
 
 static this() {
   char[][char[]] init;
   char[] curlang;
   nls[""] = init;
   auto lines = (cast(char[])read("nls" ~ sep ~ "default.txt")).split("\n")
-    ~ maps!("if (_.length && (_[$-1] == '\\r')) return _[0..$-1]; _") // remove trailing \r
-    ~ toArray;
+    /map/ (string s) { if (s.length && (s[$-1] == '\r')) return s[0..$-1]; else return s; };
   foreach (line; lines) {
     if (!line.length) continue;
     // begin of a new language section

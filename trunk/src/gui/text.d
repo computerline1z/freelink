@@ -1,7 +1,14 @@
 module gui.text;
-import tools.base, tools.ext;
+import tools.base;
 public import gui.base;
 import contrib.SDL, contrib.SDL_ttf;
+import std.stdio: format;
+
+T take(T)(ref T[] array) {
+  auto res=array[0];
+  array=array[1..$];
+  return res;
+}
 
 import std.random;
 class Font {
@@ -15,83 +22,46 @@ class Font {
     return buffer[ch];
   }
   class GridTextField : Widget {
-    /// returns whether to re-call it (implies newline). Writes self into target.
-    /// _May_ change target.
-    // /// NO SUCH DELEGATE MUST EVER, AT A LATER TIME, RENDER LESS LINES THAN BEFORE.
-    /// ^+-This restriction stems from an earlier phase in development.
-    ///  +-It's not relevant anymore. Please ignore it.
-    TextGenerator[] gens;
     int glyph_w, glyph_h;
     this(int w, int h) { glyph_w = w; glyph_h = h; }
     wchar[][] screen_area; /// [line] [column]
+    size_t row, col; /// cursor position
+    void write(wstring text) {
+      if (row!<screen_area.length) throw new Exception(format("Row out of bounds: [0..", screen_area.length, "]"));
+      while (text.length) {
+        screen_area[row][col++]=text.take();
+        if (col==screen_area[row].length) newline();
+      }
+    }
+    void newline() {
+      col=0;
+      row++;
+      while (row!<screen_area.length) {
+        screen_area=screen_area[1..$]~new wchar[screen_area[$-1].length];
+        --row;
+      }
+    }
+    void backspace() {
+      if (col) --col; else if (row) col=screen_area[--row].length-1;
+    }
+    void put(wchar ch) { if (screen_area.length>row) if (screen_area[row].length>col) screen_area[row][col]=ch; }
     void setRegion(Area target) {
       size_t xsize = target.w/glyph_w;
-      screen_area = new wchar[][target.h / glyph_h];
-      foreach (inout line; screen_area) line = new wchar[xsize];
+      screen_area.length=target.h/glyph_h;
+      foreach (inout line; screen_area) line.length=xsize;
       super.setRegion(target);
     }
-    private wchar[][] eval(size_t xchars, size_t ychars) {
-      /// the last line each delegate has rendered.
-      int[typeof(gens[0])] lastlines;
-      /// [line] [column]
-      auto res = field(ychars, new wchar[xchars]);
-      auto work = res.dup;
-      size_t current = 0;
-      foreach (gen; gens) {
-        bool recall = false;
-        bool initial = true;
-        do {
-          recall = gen(work[current], initial); /// render line into buffer
-          initial = false;
-          if (recall) { current++;}
-          else lastlines[gen] = current;
-          /// while the cursor is below the screen, expand the screen downwards.
-          while (current >= work.length) {
-            auto newline = new wchar[xchars];
-            work ~= newline; res ~= newline;
-          }
-        } while (recall);
-      }
-      return res[$ - ychars..$];
-    }
     void update() {
-      auto newScreen = eval(screen_area[0].length, screen_area.length);
-      foreach (line_nr, line; newScreen)
+      foreach (line_nr, line; screen_area)
         foreach (col_nr, ch; line)
-          if (ch != screen_area[line_nr][col_nr])
-            with (area) with (select(col_nr * glyph_w+rand%3,
-                              line_nr * glyph_h+rand%3, glyph_w, glyph_h)) {
-                                clean; blit(getChar(ch));
-                              }
-      screen_area = newScreen;
+          with (area)
+            with (select(col_nr * glyph_w/*+rand%2*/,
+              line_nr * glyph_h/*+rand%2*/, glyph_w, glyph_h)) {
+                clean; blit(getChar(ch));
+              }
     }
     void draw() { update; } /// :sings: REDUNDANCY! F**K YEAH!
   }
   TTF_FontClass f;
   this(void[] font, int size) { f = new TTF_FontClass(font, size); }
-}
-
-bool writeOn(wchar[] target, ref size_t offset, wchar[][] text...) {
-  if (offset==size_t.max) {
-    return false; /// Ensure the final newline
-  }
-  wchar[] str=(iterate(text)~reduces!("_~=__"))[offset..$];
-  if (str.length>target.length) {
-    target[0..$]=str[0..target.length];
-    offset+=target.length;
-    return true;
-  } else {
-    target[0..str.length]=str;
-    offset=size_t.max; /// last newline
-    return true;
-  }
-}
-
-TextGenerator WriteGrid(wchar[] text) {
-  struct holder {
-    wchar[] text;
-    size_t offset;
-    bool call(wchar[] target, bool reset) { if (reset) offset=0; return writeOn(target, offset, text); }
-  }
-  auto foo=new holder; foo.text=text; return &foo.call;
 }

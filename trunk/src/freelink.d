@@ -2,12 +2,13 @@ module freelink;
 import std.stdio, std.thread, std.file, std.process, std.utf;
 import std.date: getUTCtime;
 static import std.date, std.stream;
-import tools.threadpool, tools.ext;
+import tools.threadpool;
 import contrib.SDL, gui.all, xml, nls, mystring;
-import guest.all;
+import guest.all, file, computer;
+
 void main ()
 {
-  auto pool=new ThreadPool(1);
+  auto pool=new Threadpool(1);
   SDL_EnableUNICODE=true;
   SDL_Surface *screen = SDL_SetVideoMode (800, 600, 32,
                                           SDL_HWSURFACE | SDL_ANYFORMAT);
@@ -31,31 +32,31 @@ void main ()
   auto frame = new Frame(fsrc, stdframe, null);
   auto font = new Font(read("cour.ttf"), 20);
   auto myGrid = font.new GridTextField(12, 24);
-  auto t=new TTY(myGrid);
-  auto ui=new UserInterface(t);
-  pool.addTask({
+  auto tty=new TTY(myGrid);
+  frame.below = myGrid;
+  frame.setRegion(Area(screen));
+  pool.addTask("Input Loop", delegate void(){
     while (true) {
-      auto inp=t.readln;
-      if (inp=="cycle") {
-        foreach (x; Integers[0..10]) {
-          t.writef(".");
+      auto inp=tty.readln;
+      if (inp=="cycle"w) {
+        foreach (x; Range[0..10]) {
+          tty.writef(".");
           system("sleep 1");
         }
-        t.writefln();
+        tty.writefln();
         continue;
       }
-      if (inp=="date") {
-        commands["date"](["date"[]])(null, ui);
+      if (inp=="date"w) {
+        //commands["date"](["date"[]])(null, ui);
         continue;
       }
+      system("rm tmp");
       system((inp~" 2>>tmp >> tmp").toUTF8());
-      foreach (result; (cast(char[])read("tmp")).split("\n")) t.writefln(result);
+      foreach (result; (cast(char[])read("tmp")).split("\n")) tty.writefln(result);
       system("rm tmp"); 
     }
   });
   
-  frame.below = myGrid;
-
   SDL_Event event;
   bool running = true;
   size_t count = 0;
@@ -63,7 +64,6 @@ void main ()
   auto current = start;
   bool[SDLKey] handled;
   SDL_FillRect(screen, null, 0);
-  frame.setRegion(Area(screen));
   while (running) {
     while (SDL_PollEvent (&event)) {
       switch (event.type) {
@@ -87,9 +87,7 @@ void main ()
           break;
       }
     }
-    t.push;
-    //frame.draw(Area(screen));
-    frame.update;
+    with (frame) { draw; update; }
     SDL_Flip(screen);
     //Sleep(10);
     Thread.yield;
